@@ -1,0 +1,6 @@
+membership-inference/data
+membership-inference/model
+membership-inference/Output.txt
+membership-inference/train_feat_file.txt
+membership-inference/train_label_file.txt
+membership-inference/Train.txt
