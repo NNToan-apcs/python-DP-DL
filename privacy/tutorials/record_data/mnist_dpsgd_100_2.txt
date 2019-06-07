@@ -1,0 +1,305 @@
+learning rate: 0.25
+noise multiplier: 1.3
+Clipping norm: 1.5
+Batch size: 256.0
+delta: 10e-5 
+EPOCH: 1/100
+For delta=1e-05, the current epsilon is: 0.72 
+Test accuracy after 1 epochs is: 84.920 
+EPOCH: 2/100
+For delta=1e-05, the current epsilon is: 0.76 
+Test accuracy after 2 epochs is: 90.160 
+EPOCH: 3/100
+For delta=1e-05, the current epsilon is: 0.80 
+Test accuracy after 3 epochs is: 91.750 
+EPOCH: 4/100
+For delta=1e-05, the current epsilon is: 0.84 
+Test accuracy after 4 epochs is: 92.250 
+EPOCH: 5/100
+For delta=1e-05, the current epsilon is: 0.88 
+Test accuracy after 5 epochs is: 92.860 
+EPOCH: 6/100
+For delta=1e-05, the current epsilon is: 0.91 
+Test accuracy after 6 epochs is: 93.650 
+EPOCH: 7/100
+For delta=1e-05, the current epsilon is: 0.94 
+Test accuracy after 7 epochs is: 93.480 
+EPOCH: 8/100
+For delta=1e-05, the current epsilon is: 0.97 
+Test accuracy after 8 epochs is: 93.840 
+EPOCH: 9/100
+For delta=1e-05, the current epsilon is: 1.00 
+Test accuracy after 9 epochs is: 94.190 
+EPOCH: 10/100
+For delta=1e-05, the current epsilon is: 1.03 
+Test accuracy after 10 epochs is: 94.500 
+EPOCH: 11/100
+For delta=1e-05, the current epsilon is: 1.07 
+Test accuracy after 11 epochs is: 94.350 
+EPOCH: 12/100
+For delta=1e-05, the current epsilon is: 1.10 
+Test accuracy after 12 epochs is: 94.420 
+EPOCH: 13/100
+For delta=1e-05, the current epsilon is: 1.13 
+Test accuracy after 13 epochs is: 94.780 
+EPOCH: 14/100
+For delta=1e-05, the current epsilon is: 1.16 
+Test accuracy after 14 epochs is: 94.420 
+EPOCH: 15/100
+For delta=1e-05, the current epsilon is: 1.19 
+Test accuracy after 15 epochs is: 94.720 
+EPOCH: 16/100
+For delta=1e-05, the current epsilon is: 1.22 
+Test accuracy after 16 epochs is: 94.560 
+EPOCH: 17/100
+For delta=1e-05, the current epsilon is: 1.25 
+Test accuracy after 17 epochs is: 94.580 
+EPOCH: 18/100
+For delta=1e-05, the current epsilon is: 1.29 
+Test accuracy after 18 epochs is: 94.480 
+EPOCH: 19/100
+For delta=1e-05, the current epsilon is: 1.32 
+Test accuracy after 19 epochs is: 94.680 
+EPOCH: 20/100
+For delta=1e-05, the current epsilon is: 1.35 
+Test accuracy after 20 epochs is: 94.880 
+EPOCH: 21/100
+For delta=1e-05, the current epsilon is: 1.38 
+Test accuracy after 21 epochs is: 94.880 
+EPOCH: 22/100
+For delta=1e-05, the current epsilon is: 1.41 
+Test accuracy after 22 epochs is: 94.830 
+EPOCH: 23/100
+For delta=1e-05, the current epsilon is: 1.44 
+Test accuracy after 23 epochs is: 95.000 
+EPOCH: 24/100
+For delta=1e-05, the current epsilon is: 1.47 
+Test accuracy after 24 epochs is: 95.180 
+EPOCH: 25/100
+For delta=1e-05, the current epsilon is: 1.50 
+Test accuracy after 25 epochs is: 94.840 
+EPOCH: 26/100
+For delta=1e-05, the current epsilon is: 1.53 
+Test accuracy after 26 epochs is: 95.240 
+EPOCH: 27/100
+For delta=1e-05, the current epsilon is: 1.56 
+Test accuracy after 27 epochs is: 94.920 
+EPOCH: 28/100
+For delta=1e-05, the current epsilon is: 1.59 
+Test accuracy after 28 epochs is: 95.230 
+EPOCH: 29/100
+For delta=1e-05, the current epsilon is: 1.62 
+Test accuracy after 29 epochs is: 95.540 
+EPOCH: 30/100
+For delta=1e-05, the current epsilon is: 1.64 
+Test accuracy after 30 epochs is: 95.250 
+EPOCH: 31/100
+For delta=1e-05, the current epsilon is: 1.67 
+Test accuracy after 31 epochs is: 95.330 
+EPOCH: 32/100
+For delta=1e-05, the current epsilon is: 1.70 
+Test accuracy after 32 epochs is: 95.010 
+EPOCH: 33/100
+For delta=1e-05, the current epsilon is: 1.73 
+Test accuracy after 33 epochs is: 95.130 
+EPOCH: 34/100
+For delta=1e-05, the current epsilon is: 1.75 
+Test accuracy after 34 epochs is: 94.920 
+EPOCH: 35/100
+For delta=1e-05, the current epsilon is: 1.78 
+Test accuracy after 35 epochs is: 94.680 
+EPOCH: 36/100
+For delta=1e-05, the current epsilon is: 1.80 
+Test accuracy after 36 epochs is: 94.850 
+EPOCH: 37/100
+For delta=1e-05, the current epsilon is: 1.83 
+Test accuracy after 37 epochs is: 95.250 
+EPOCH: 38/100
+For delta=1e-05, the current epsilon is: 1.85 
+Test accuracy after 38 epochs is: 94.820 
+EPOCH: 39/100
+For delta=1e-05, the current epsilon is: 1.88 
+Test accuracy after 39 epochs is: 94.630 
+EPOCH: 40/100
+For delta=1e-05, the current epsilon is: 1.90 
+Test accuracy after 40 epochs is: 94.950 
+EPOCH: 41/100
+For delta=1e-05, the current epsilon is: 1.92 
+Test accuracy after 41 epochs is: 95.100 
+EPOCH: 42/100
+For delta=1e-05, the current epsilon is: 1.95 
+Test accuracy after 42 epochs is: 95.120 
+EPOCH: 43/100
+For delta=1e-05, the current epsilon is: 1.97 
+Test accuracy after 43 epochs is: 95.130 
+EPOCH: 44/100
+For delta=1e-05, the current epsilon is: 1.99 
+Test accuracy after 44 epochs is: 94.770 
+EPOCH: 45/100
+For delta=1e-05, the current epsilon is: 2.02 
+Test accuracy after 45 epochs is: 95.060 
+EPOCH: 46/100
+For delta=1e-05, the current epsilon is: 2.04 
+Test accuracy after 46 epochs is: 94.750 
+EPOCH: 47/100
+For delta=1e-05, the current epsilon is: 2.06 
+Test accuracy after 47 epochs is: 94.720 
+EPOCH: 48/100
+For delta=1e-05, the current epsilon is: 2.08 
+Test accuracy after 48 epochs is: 95.150 
+EPOCH: 49/100
+For delta=1e-05, the current epsilon is: 2.10 
+Test accuracy after 49 epochs is: 95.160 
+EPOCH: 50/100
+For delta=1e-05, the current epsilon is: 2.13 
+Test accuracy after 50 epochs is: 95.070 
+EPOCH: 51/100
+For delta=1e-05, the current epsilon is: 2.15 
+Test accuracy after 51 epochs is: 94.940 
+EPOCH: 52/100
+For delta=1e-05, the current epsilon is: 2.17 
+Test accuracy after 52 epochs is: 94.800 
+EPOCH: 53/100
+For delta=1e-05, the current epsilon is: 2.19 
+Test accuracy after 53 epochs is: 94.970 
+EPOCH: 54/100
+For delta=1e-05, the current epsilon is: 2.21 
+Test accuracy after 54 epochs is: 94.640 
+EPOCH: 55/100
+For delta=1e-05, the current epsilon is: 2.23 
+Test accuracy after 55 epochs is: 94.980 
+EPOCH: 56/100
+For delta=1e-05, the current epsilon is: 2.26 
+Test accuracy after 56 epochs is: 94.870 
+EPOCH: 57/100
+For delta=1e-05, the current epsilon is: 2.27 
+Test accuracy after 57 epochs is: 94.950 
+EPOCH: 58/100
+For delta=1e-05, the current epsilon is: 2.29 
+Test accuracy after 58 epochs is: 95.090 
+EPOCH: 59/100
+For delta=1e-05, the current epsilon is: 2.31 
+Test accuracy after 59 epochs is: 95.090 
+EPOCH: 60/100
+For delta=1e-05, the current epsilon is: 2.33 
+Test accuracy after 60 epochs is: 95.050 
+EPOCH: 61/100
+For delta=1e-05, the current epsilon is: 2.35 
+Test accuracy after 61 epochs is: 94.790 
+EPOCH: 62/100
+For delta=1e-05, the current epsilon is: 2.37 
+Test accuracy after 62 epochs is: 95.020 
+EPOCH: 63/100
+For delta=1e-05, the current epsilon is: 2.39 
+Test accuracy after 63 epochs is: 94.060 
+EPOCH: 64/100
+For delta=1e-05, the current epsilon is: 2.41 
+Test accuracy after 64 epochs is: 94.490 
+EPOCH: 65/100
+For delta=1e-05, the current epsilon is: 2.43 
+Test accuracy after 65 epochs is: 94.460 
+EPOCH: 66/100
+For delta=1e-05, the current epsilon is: 2.45 
+Test accuracy after 66 epochs is: 94.470 
+EPOCH: 67/100
+For delta=1e-05, the current epsilon is: 2.47 
+Test accuracy after 67 epochs is: 94.330 
+EPOCH: 68/100
+For delta=1e-05, the current epsilon is: 2.49 
+Test accuracy after 68 epochs is: 94.140 
+EPOCH: 69/100
+For delta=1e-05, the current epsilon is: 2.51 
+Test accuracy after 69 epochs is: 94.390 
+EPOCH: 70/100
+For delta=1e-05, the current epsilon is: 2.52 
+Test accuracy after 70 epochs is: 94.660 
+EPOCH: 71/100
+For delta=1e-05, the current epsilon is: 2.54 
+Test accuracy after 71 epochs is: 94.710 
+EPOCH: 72/100
+For delta=1e-05, the current epsilon is: 2.56 
+Test accuracy after 72 epochs is: 94.860 
+EPOCH: 73/100
+For delta=1e-05, the current epsilon is: 2.58 
+Test accuracy after 73 epochs is: 94.690 
+EPOCH: 74/100
+For delta=1e-05, the current epsilon is: 2.60 
+Test accuracy after 74 epochs is: 94.770 
+EPOCH: 75/100
+For delta=1e-05, the current epsilon is: 2.62 
+Test accuracy after 75 epochs is: 94.670 
+EPOCH: 76/100
+For delta=1e-05, the current epsilon is: 2.63 
+Test accuracy after 76 epochs is: 95.020 
+EPOCH: 77/100
+For delta=1e-05, the current epsilon is: 2.65 
+Test accuracy after 77 epochs is: 94.790 
+EPOCH: 78/100
+For delta=1e-05, the current epsilon is: 2.67 
+Test accuracy after 78 epochs is: 94.940 
+EPOCH: 79/100
+For delta=1e-05, the current epsilon is: 2.69 
+Test accuracy after 79 epochs is: 94.600 
+EPOCH: 80/100
+For delta=1e-05, the current epsilon is: 2.70 
+Test accuracy after 80 epochs is: 94.580 
+EPOCH: 81/100
+For delta=1e-05, the current epsilon is: 2.72 
+Test accuracy after 81 epochs is: 94.670 
+EPOCH: 82/100
+For delta=1e-05, the current epsilon is: 2.74 
+Test accuracy after 82 epochs is: 94.520 
+EPOCH: 83/100
+For delta=1e-05, the current epsilon is: 2.76 
+Test accuracy after 83 epochs is: 94.520 
+EPOCH: 84/100
+For delta=1e-05, the current epsilon is: 2.77 
+Test accuracy after 84 epochs is: 94.420 
+EPOCH: 85/100
+For delta=1e-05, the current epsilon is: 2.79 
+Test accuracy after 85 epochs is: 94.570 
+EPOCH: 86/100
+For delta=1e-05, the current epsilon is: 2.81 
+Test accuracy after 86 epochs is: 94.650 
+EPOCH: 87/100
+For delta=1e-05, the current epsilon is: 2.82 
+Test accuracy after 87 epochs is: 94.610 
+EPOCH: 88/100
+For delta=1e-05, the current epsilon is: 2.84 
+Test accuracy after 88 epochs is: 94.730 
+EPOCH: 89/100
+For delta=1e-05, the current epsilon is: 2.86 
+Test accuracy after 89 epochs is: 94.630 
+EPOCH: 90/100
+For delta=1e-05, the current epsilon is: 2.87 
+Test accuracy after 90 epochs is: 94.790 
+EPOCH: 91/100
+For delta=1e-05, the current epsilon is: 2.89 
+Test accuracy after 91 epochs is: 94.440 
+EPOCH: 92/100
+For delta=1e-05, the current epsilon is: 2.91 
+Test accuracy after 92 epochs is: 94.730 
+EPOCH: 93/100
+For delta=1e-05, the current epsilon is: 2.92 
+Test accuracy after 93 epochs is: 94.350 
+EPOCH: 94/100
+For delta=1e-05, the current epsilon is: 2.94 
+Test accuracy after 94 epochs is: 94.900 
+EPOCH: 95/100
+For delta=1e-05, the current epsilon is: 2.96 
+Test accuracy after 95 epochs is: 94.860 
+EPOCH: 96/100
+For delta=1e-05, the current epsilon is: 2.97 
+Test accuracy after 96 epochs is: 94.640 
+EPOCH: 97/100
+For delta=1e-05, the current epsilon is: 2.99 
+Test accuracy after 97 epochs is: 94.900 
+EPOCH: 98/100
+For delta=1e-05, the current epsilon is: 3.00 
+Test accuracy after 98 epochs is: 94.570 
+EPOCH: 99/100
+For delta=1e-05, the current epsilon is: 3.02 
+Test accuracy after 99 epochs is: 94.930 
+EPOCH: 100/100
+For delta=1e-05, the current epsilon is: 3.04 
+Test accuracy after 100 epochs is: 94.930 
