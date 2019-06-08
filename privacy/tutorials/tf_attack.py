@@ -8,6 +8,8 @@ import sys
 from PIL import Image
 from absl import app
 from tensorflow.contrib import predictor
+
+from dpsgd_classifier import train as train_model
 def load_mnist():
   """Loads MNIST and preprocesses to combine training and validation data."""
   train, test = tf.keras.datasets.mnist.load_data()
@@ -156,17 +158,19 @@ def cnn_model_fn(features, labels, mode):
 #         label = prediction['class_ids'][0]
         
 #         print(idx, "-",  prediction['class_ids'], "-", prediction['probabilities'])
-# def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, l2_ratio=1e-7,
-#                        n_hidden=50, model='nn', save=True):
-# def train_shadow_models(unused_argv):
-# def train_attack_model(unused_argv):
-from keras.utils import plot_model
+
 def main(unused_argv):
-    export_dir="D:\DL_models\mnist_sgd_60"
-    mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir=export_dir)
-    plot_model(mnist_classifier, to_file='model.png')
-    # train_target_model()
-    # train_shadow_models()
-    # train_attack_model()
+    dataset = load_mnist()
+    model = train_model(dataset)
+    train_data, train_labels, test_data, test_labels = dataset
+
+    # Create tf.Estimator input functions for the training and test data.
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={'x': test_data},
+        y=test_labels,
+        num_epochs=1,
+        shuffle=False)
+    eval_results = model.evaluate(input_fn=eval_input_fn)
+    
 if __name__ == '__main__':
     app.run(main)
