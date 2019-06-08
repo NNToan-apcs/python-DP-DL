@@ -193,7 +193,12 @@ def train(dataset):
 
     # Load training and test data.
     train_data, train_labels, test_data, test_labels = dataset
-
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    print(train_data.shape)
+    print(train_labels.shape)
+    print(test_data.shape)
+    print(test_labels.shape)
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     # Instantiate the tf.Estimator.
     mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                               model_dir=FLAGS.model_dir)
