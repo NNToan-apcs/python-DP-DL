@@ -4,5 +4,5 @@ membership-inference/Output.txt
 membership-inference/train_feat_file.txt
 membership-inference/train_label_file.txt
 membership-inference/Train.txt
-privacy/tutorial/model
-privacy/tutorial/data
+privacy/tutorials/model
+privacy/tutorials/data
