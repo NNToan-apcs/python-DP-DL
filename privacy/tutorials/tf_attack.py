@@ -89,80 +89,6 @@ def cnn_model_fn(features, labels, mode):
                                       eval_metric_ops=eval_metric_ops)
   
 
-
-# def main(unused_argv):
-#     # Load model: mnist_sgd_60 mnist_dpsgd_60 model_test
-#     if len(sys.argv) >= 2:
-#         model_dir = sys.argv[1]
-#         export_dir="D:\DL_models\\" + model_dir
-#     else:
-#         export_dir="D:\DL_models\mnist_sgd_60"
-#     predict_datas = []
-#     if len(sys.argv) >= 3:
-#         for i in range(2, len(sys.argv)):
-#             input_image = sys.argv[i]
-#             img = Image.open('C:/Users/nntoa/Desktop/mnist_test_data/' + input_image +'.png').convert("L")
-#             img = img.resize((28,28))
-#             im2arr = np.array(img)
-#             im2arr = im2arr.reshape(1,28,28,1)
-#             im2arr = im2arr.astype('float32')
-#             # Normalize
-#             im2arr /= 255
-#             predict_datas.append(im2arr)
-#     else:
-#         img = Image.open('C:/Users/nntoa/Desktop/mnist_test_data/seven.png').convert("L")
-#         img = img.resize((28,28))
-#         img.show()
-#         im2arr = np.array(img)
-#         im2arr = im2arr.reshape(1,28,28,1)
-#         im2arr = im2arr.astype('float32')
-#         # Normalize
-#         im2arr /= 255
-#         predict_datas.append(im2arr)
-    
-#     # test
-    
-#     mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
-#                                             model_dir=export_dir)
-#     # Load training and test data.
-#     train_data, train_labels, test_data, test_labels = load_mnist()
-
-#     # Create tf.Estimator input functions for the training and test data.
-#     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-#         x={'x': test_data},
-#         y=test_labels,
-#         num_epochs=1,
-#         shuffle=False)
-
-#     eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-#     print("---------------------------------------------------------")
-#     print("Current model's accuracy:", 100*eval_results['accuracy'] )
-#     print("---------------------------------------------------------")
-
-#     # Load own Image
-    
-    
-#     # img.show()
-    
-#     # Predict Image
-#     pred_input_fn = tf.estimator.inputs.numpy_input_fn(
-#         # x={'x': np.array([test_data[0:10]])},
-#         x={'x': np.array(predict_datas)},
-#         y=None, 
-#         batch_size=1,
-#         num_epochs=1,
-#         shuffle=False,
-#         num_threads=1)
-
-#     predict_results = mnist_classifier.predict(pred_input_fn) 
-
-#     for idx, prediction in enumerate(predict_results):
-#         if( idx == 0):
-#             print("id - labels - probabilities")
-#         # Get the indices of maximum element in numpy array
-#         label = prediction['class_ids'][0]
-        
-#         print(idx, "-",  prediction['class_ids'], "-", prediction['probabilities'])
 def load_trained_indices():
     fname = MODEL_PATH + 'data_indices.npz'
     with np.load(fname) as f:
@@ -224,7 +150,11 @@ def save_data():
         test_x, test_y = shadow_i_x[target_size:], shadow_i_y[target_size:]
         np.savez(DATA_PATH + 'shadow{}_data.npz'.format(i), train_x, train_y, test_x, test_y)
 
-
+# TODO
+# def attack_experiment():
+#     train_target_model(dataset)
+#     train_shadow_models(dataset)
+#     train_attack_model(dataset)
 
 
 def main(unused_argv):
@@ -279,6 +209,6 @@ if __name__ == '__main__':
     if args.save_data:
         save_data()
     else:
-        # attack_experiment()
+        attack_experiment()
         app.run(main)
     

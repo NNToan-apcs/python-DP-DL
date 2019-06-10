@@ -121,3 +121,6 @@ line4, = plt.plot(range(1,len(model_acc_sgd)+1), model_acc_sgd, '.-')
 line4.set_label('SGD')
 plt.legend()
 plt.show()
+
+plot3 = plt.subplot(2, 1, 3)
+
