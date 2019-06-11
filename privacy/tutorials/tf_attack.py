@@ -2,39 +2,60 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import numpy as np
 import sys
 import os
-
-from PIL import Image
+# from PIL import Image
 from absl import app
-from tensorflow.contrib import predictor
 
 from dpsgd_classifier import train as train_model
 
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score
+from utils import load_trained_indices, get_data_indices, load_mnist
 import argparse
-def load_mnist():
-  """Loads MNIST and preprocesses to combine training and validation data."""
-  train, test = tf.keras.datasets.mnist.load_data()
-  train_data, train_labels = train
-  test_data, test_labels = test
 
-  train_data = np.array(train_data, dtype=np.float32) / 255
-  test_data = np.array(test_data, dtype=np.float32) / 255
+def save_data():
+    print( '-' * 10 + 'SAVING DATA TO DISK' + '-' * 10 + '\n')
+    MODEL_PATH = './model/'
+    DATA_PATH = './data/'
+    
+    if not os.path.exists(MODEL_PATH):
+        os.makedirs(MODEL_PATH)
 
-  train_labels = np.array(train_labels, dtype=np.int32)
-  test_labels = np.array(test_labels, dtype=np.int32)
+    if not os.path.exists(DATA_PATH):
+        os.makedirs(DATA_PATH)
+    # x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
+    x, y, test_x, test_y = load_mnist()
+    if test_x is None:
+        print( 'Splitting train/test data with ratio {}/{}'.format(1 - args.test_ratio, args.test_ratio))
+        x, test_x, y, test_y = train_test_split(x, y, test_size=args.test_ratio, stratify=y)
 
-  assert train_data.min() == 0.
-  assert train_data.max() == 1.
-  assert test_data.min() == 0.
-  assert test_data.max() == 1.
-  assert train_labels.ndim == 1
-  assert test_labels.ndim == 1
+    # need to partition target and shadow model data
+    assert len(x) > 2 * args.target_data_size
 
-  return train_data, train_labels, test_data, test_labels
+    target_data_indices, shadow_indices = get_data_indices(len(x), target_train_size=args.target_data_size)
+    np.savez(MODEL_PATH + 'data_indices.npz', target_data_indices, shadow_indices)
+
+    # target model's data
+    print( 'Saving data for target model')
+    train_x, train_y = x[target_data_indices], y[target_data_indices]
+    size = len(target_data_indices)
+    if size < len(test_x):
+        test_x = test_x[:size]
+        test_y = test_y[:size]
+    # save target data
+    np.savez(DATA_PATH + 'target_data.npz', train_x, train_y, test_x, test_y)
+
+    # shadow model's data
+    target_size = len(target_data_indices)
+    shadow_x, shadow_y = x[shadow_indices], y[shadow_indices]
+    shadow_indices = np.arange(len(shadow_indices))
+
+    for i in range(args.n_shadow):
+        print( 'Saving data for shadow model {}'.format(i))
+        shadow_i_indices = np.random.choice(shadow_indices, 2 * target_size, replace=False)
+        shadow_i_x, shadow_i_y = shadow_x[shadow_i_indices], shadow_y[shadow_i_indices]
+        train_x, train_y = shadow_i_x[:target_size], shadow_i_y[:target_size]
+        test_x, test_y = shadow_i_x[target_size:], shadow_i_y[target_size:]
+        np.savez(DATA_PATH + 'shadow{}_data.npz'.format(i), train_x, train_y, test_x, test_y)
 
 def cnn_model_fn(features, labels, mode):
   """Model function for a CNN."""
@@ -87,79 +108,56 @@ def cnn_model_fn(features, labels, mode):
     return tf.estimator.EstimatorSpec(mode=mode,
                                       loss=scalar_loss,
                                       eval_metric_ops=eval_metric_ops)
-  
-
-def load_trained_indices():
-    fname = MODEL_PATH + 'data_indices.npz'
-    with np.load(fname) as f:
-        indices = [f['arr_%d' % i] for i in range(len(f.files))]
-    return indices
-
-
-def get_data_indices(data_size, target_train_size=int(1e4), sample_target_data=True):
-    train_indices = np.arange(data_size)
-    if sample_target_data:
-        target_data_indices = np.random.choice(train_indices, target_train_size, replace=False)
-        shadow_indices = np.setdiff1d(train_indices, target_data_indices)
-    else:
-        target_data_indices = train_indices[:target_train_size]
-        shadow_indices = train_indices[target_train_size:]
-    return target_data_indices, shadow_indices
-def save_data():
-    print( '-' * 10 + 'SAVING DATA TO DISK' + '-' * 10 + '\n')
-    MODEL_PATH = './model/'
-    DATA_PATH = './data/'
-    
-    if not os.path.exists(MODEL_PATH):
-        os.makedirs(MODEL_PATH)
-
-    if not os.path.exists(DATA_PATH):
-        os.makedirs(DATA_PATH)
-    # x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
-    x, y, test_x, test_y = load_mnist()
-    if test_x is None:
-        print( 'Splitting train/test data with ratio {}/{}'.format(1 - args.test_ratio, args.test_ratio))
-        x, test_x, y, test_y = train_test_split(x, y, test_size=args.test_ratio, stratify=y)
-
-    # need to partition target and shadow model data
-    assert len(x) > 2 * args.target_data_size
-
-    target_data_indices, shadow_indices = get_data_indices(len(x), target_train_size=args.target_data_size)
-    np.savez(MODEL_PATH + 'data_indices.npz', target_data_indices, shadow_indices)
-
-    # target model's data
-    print( 'Saving data for target model')
-    train_x, train_y = x[target_data_indices], y[target_data_indices]
-    size = len(target_data_indices)
-    if size < len(test_x):
-        test_x = test_x[:size]
-        test_y = test_y[:size]
-    # save target data
-    np.savez(DATA_PATH + 'target_data.npz', train_x, train_y, test_x, test_y)
-
-    # shadow model's data
-    target_size = len(target_data_indices)
-    shadow_x, shadow_y = x[shadow_indices], y[shadow_indices]
-    shadow_indices = np.arange(len(shadow_indices))
-
-    for i in range(args.n_shadow):
-        print( 'Saving data for shadow model {}'.format(i))
-        shadow_i_indices = np.random.choice(shadow_indices, 2 * target_size, replace=False)
-        shadow_i_x, shadow_i_y = shadow_x[shadow_i_indices], shadow_y[shadow_i_indices]
-        train_x, train_y = shadow_i_x[:target_size], shadow_i_y[:target_size]
-        test_x, test_y = shadow_i_x[target_size:], shadow_i_y[target_size:]
-        np.savez(DATA_PATH + 'shadow{}_data.npz'.format(i), train_x, train_y, test_x, test_y)
 
 # TODO
-# def attack_experiment():
-#     train_target_model(dataset)
-#     train_shadow_models(dataset)
-#     train_attack_model(dataset)
+def attack_experiment():
+    print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
+    dataset = load_data('target_data.npz')
+    attack_test_x, attack_test_y, test_classes = train_target_model(dataset)
+
+    # train_shadow_models(dataset)
+    # train_attack_model(dataset)
+
+
+def train_target_model(dataset):
+    train_x, train_y, test_x, test_y = dataset
+    output_layer = train_model(dataset, n_hidden=n_hidden, epochs=epochs, learning_rate=learning_rate,
+                               batch_size=batch_size, model=model, l2_ratio=l2_ratio)
+    # test data for attack model
+    attack_x, attack_y = [], []
+    input_var = T.matrix('x')
+    prob = lasagne.layers.get_output(output_layer, input_var, deterministic=True)
+    prob_fn = theano.function([input_var], prob)
+    # data used in training, label is 1
+    for batch in iterate_minibatches(train_x, train_y, batch_size, False):
+        attack_x.append(prob_fn(batch[0]))
+        attack_y.append(np.ones(batch_size))
+    # data not used in training, label is 0
+    for batch in iterate_minibatches(test_x, test_y, batch_size, False):
+        attack_x.append(prob_fn(batch[0]))
+        attack_y.append(np.zeros(batch_size))
+
+    attack_x = np.vstack(attack_x)
+    attack_y = np.concatenate(attack_y)
+    attack_x = attack_x.astype('float32')
+    attack_y = attack_y.astype('int32')
+
+    if save:
+        np.savez(MODEL_PATH + 'attack_test_data.npz', attack_x, attack_y)
+        np.savez(MODEL_PATH + 'target_model.npz', *lasagne.layers.get_all_param_values(output_layer))
+
+    classes = np.concatenate([train_y, test_y])
+    return attack_x, attack_y, classes    
+
+
+
+
 
 
 def main(unused_argv):
     dataset = load_mnist()
-    model = train_model(dataset)
+    # TODO: LOAD model from estimators
+    model, graph = train_model(dataset)
     train_data, train_labels, test_data, test_labels = dataset
 
     # Create tf.Estimator input functions for the training and test data.
@@ -173,7 +171,16 @@ def main(unused_argv):
     print("Current model's accuracy:", 100*eval_results['accuracy'] )
     print("---------------------------------------------------------")
 
-    attack_x, attack_y = [], []
+    # attack_x, attack_y = [], []
+    print('*'*10 + "Output" + '*'*10 )
+    # graph = tf.get_default_graph()
+    
+    graph = tf.get_default_graph()
+    # print("v1 : %s" % v1.eval())
+    output = graph.get_tensor_by_name('output:0')
+    # print("v2 : %s" % v2.eval())
+    print(output)
+    print('*'*10 + "Output" + '*'*10 )
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -209,6 +216,6 @@ if __name__ == '__main__':
     if args.save_data:
         save_data()
     else:
-        attack_experiment()
+        # attack_experiment()
         app.run(main)
     

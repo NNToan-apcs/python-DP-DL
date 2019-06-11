@@ -17,7 +17,8 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
+import sys, os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from absl import app
 from absl import flags
 
@@ -25,7 +26,6 @@ from distutils.version import LooseVersion
 
 import numpy as np
 import tensorflow as tf
-
 from privacy.analysis import privacy_ledger
 from privacy.analysis.rdp_accountant import compute_rdp_from_ledger
 from privacy.analysis.rdp_accountant import get_privacy_spent
@@ -52,15 +52,16 @@ flags.DEFINE_float('noise_multiplier', 0.7,
 flags.DEFINE_float('l2_norm_clip', 1.5, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 256, 'Batch size')
 flags.DEFINE_float('delta', 1e-5, 'target delta')
-flags.DEFINE_integer('epochs', 100, 'Number of epochs')
+flags.DEFINE_integer('epochs', 10, 'Number of epochs')
 # flags.DEFINE_integer('epochs', 15, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 256, 'Number of microbatches '
     '(must evenly divide batch_size)')
-flags.DEFINE_string('model_dir', "D:\\DL_models\\mnist_sgd_100" , 'Model directory')
+# flags.DEFINE_string('model_dir', "D:/DL_models/mnist_sgd_100" , 'Model directory')
+flags.DEFINE_string('model_dir', '/home/toan/Desktop/DL_models/mnist_sgd_10' , 'Model directory')
 
 flags.DEFINE_string('record_dir', "./record_data" , 'Model records dir')
-flags.DEFINE_string('record_file', "mnist_sgd_100.txt" , 'Model records file')
+flags.DEFINE_string('record_file', "mnist_sgd_20.txt" , 'Model records file')
 class EpsilonPrintingTrainingHook(tf.estimator.SessionRunHook):
   """Training hook to print current value of epsilon after an epoch."""
 
@@ -105,7 +106,7 @@ def cnn_model_fn(features, labels, mode):
   y = tf.keras.layers.Flatten().apply(y)
   y = tf.keras.layers.Dense(32, activation='relu').apply(y)
   logits = tf.keras.layers.Dense(10).apply(y)
-
+  logits = tf.identity(logits, name='output')
   # Calculate loss as a vector (to support microbatches in DP-SGD).
   vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
       labels=labels, logits=logits)
@@ -245,7 +246,8 @@ def train(dataset):
       print('Test accuracy after %d epochs is: %.3f' % (epoch, 100*test_accuracy))
       f.close()
       print("----------------------------------")
-    return mnist_classifier
+      graph = tf.get_default_graph()
+    return mnist_classifier, graph
 
 
 def main(unused_argv):
