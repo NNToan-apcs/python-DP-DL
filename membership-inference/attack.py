@@ -63,6 +63,9 @@ def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, 
     # data used in training, label is 1
     for batch in iterate_minibatches(train_x, train_y, batch_size, False):
         attack_x.append(prob_fn(batch[0]))
+        print('-'*10 + "A"*10 + '-'*10)
+        print(prob_fn(batch[0]))
+        print('-'*10 + "A"*10 + '-'*10)
         attack_y.append(np.ones(batch_size))
     # data not used in training, label is 0
     for batch in iterate_minibatches(test_x, test_y, batch_size, False):
@@ -197,7 +200,7 @@ def save_data():
 def load_data(data_name):
     with np.load(DATA_PATH + data_name) as f:
         train_x, train_y, test_x, test_y = [f['arr_%d' % i] for i in range(len(f.files))]
-    return train_x, train_y, test_x, test_y
+    return train_x, trai n_y, test_x, test_y
 
 
 def attack_experiment():

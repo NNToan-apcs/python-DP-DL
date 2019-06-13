@@ -6,3 +6,4 @@ membership-inference/train_label_file.txt
 membership-inference/Train.txt
 privacy/tutorials/model
 privacy/tutorials/data
+privacy/tutorials/record_data

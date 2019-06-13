@@ -57,11 +57,20 @@ flags.DEFINE_integer('epochs', 10, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 256, 'Number of microbatches '
     '(must evenly divide batch_size)')
-# flags.DEFINE_string('model_dir', "D:/DL_models/mnist_sgd_100" , 'Model directory')
-flags.DEFINE_string('model_dir', '/home/toan/Desktop/DL_models/mnist_sgd_10' , 'Model directory')
 
 flags.DEFINE_string('record_dir', "./record_data" , 'Model records dir')
-flags.DEFINE_string('record_file', "mnist_sgd_20.txt" , 'Model records file')
+# modeldir =  "/home/toan/Desktop/DL_models/" # UBUNTU
+modeldir =  "D:/DL_models/" # Window
+modelName = "mnist_sgd_10"
+if os.path.exists(modeldir + modelName):
+  i=1
+  while os.path.exists(modeldir + modelName + '_' + str(i)):
+    i+=1
+  flags.DEFINE_string('model_dir', modeldir +  modelName + '_' + str(i), 'Model directory')
+  flags.DEFINE_string('record_file', modelName + '_' + str(i) + ".txt" , 'Model records file')
+else:
+  flags.DEFINE_string('model_dir', modeldir +  modelName, 'Model directory')
+  flags.DEFINE_string('record_file', modelName + ".txt" , 'Model records file')
 class EpsilonPrintingTrainingHook(tf.estimator.SessionRunHook):
   """Training hook to print current value of epsilon after an epoch."""
 
@@ -194,12 +203,6 @@ def train(dataset):
 
     # Load training and test data.
     train_data, train_labels, test_data, test_labels = dataset
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    print(train_data.shape)
-    print(train_labels.shape)
-    print(test_data.shape)
-    print(test_labels.shape)
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     # Instantiate the tf.Estimator.
     mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                               model_dir=FLAGS.model_dir)
@@ -246,8 +249,8 @@ def train(dataset):
       print('Test accuracy after %d epochs is: %.3f' % (epoch, 100*test_accuracy))
       f.close()
       print("----------------------------------")
-      graph = tf.get_default_graph()
-    return mnist_classifier, graph
+    
+    return mnist_classifier
 
 
 def main(unused_argv):

@@ -128,17 +128,17 @@ def main(unused_argv):
     # img.show()
     
     # Predict Image
+    train_x, train_y,test_x, test_y = load_mnist()
     pred_input_fn = tf.estimator.inputs.numpy_input_fn(
         # x={'x': np.array([test_data[0:10]])},
         x={'x': im2arr},
         y=None, 
-        batch_size=1,
         num_epochs=1,
         shuffle=False,
         num_threads=1)
 
     predict_results = mnist_classifier.predict(pred_input_fn) 
-
+    print(predict_results)
     for idx, prediction in enumerate(predict_results):
         if( idx == 0):
             print("id - labels - probabilities")

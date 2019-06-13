@@ -4,22 +4,22 @@ Clipping norm: 1.5
 Batch size: 256.0
 delta: 10e-5 
 EPOCH: 1/10
-Test accuracy after 1 epochs is: 11.350 
+Test accuracy after 1 epochs is: 98.820 
 EPOCH: 2/10
-Test accuracy after 2 epochs is: 11.350 
+Test accuracy after 2 epochs is: 98.790 
 EPOCH: 3/10
-Test accuracy after 3 epochs is: 11.350 
+Test accuracy after 3 epochs is: 98.770 
 EPOCH: 4/10
-Test accuracy after 4 epochs is: 11.350 
+Test accuracy after 4 epochs is: 98.840 
 EPOCH: 5/10
-Test accuracy after 5 epochs is: 11.350 
+Test accuracy after 5 epochs is: 98.910 
 EPOCH: 6/10
-Test accuracy after 6 epochs is: 11.350 
+Test accuracy after 6 epochs is: 98.980 
 EPOCH: 7/10
-Test accuracy after 7 epochs is: 11.350 
+Test accuracy after 7 epochs is: 98.720 
 EPOCH: 8/10
-Test accuracy after 8 epochs is: 11.350 
+Test accuracy after 8 epochs is: 98.950 
 EPOCH: 9/10
-Test accuracy after 9 epochs is: 11.350 
+Test accuracy after 9 epochs is: 99.060 
 EPOCH: 10/10
-Test accuracy after 10 epochs is: 11.350 
+Test accuracy after 10 epochs is: 98.910 
