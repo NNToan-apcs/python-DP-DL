@@ -52,7 +52,7 @@ flags.DEFINE_float('noise_multiplier', 0.7,
 flags.DEFINE_float('l2_norm_clip', 1.5, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 256, 'Batch size')
 flags.DEFINE_float('delta', 1e-5, 'target delta')
-flags.DEFINE_integer('epochs', 10, 'Number of epochs')
+flags.DEFINE_integer('epochs', 5, 'Number of epochs')
 # flags.DEFINE_integer('epochs', 15, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 256, 'Number of microbatches '
@@ -222,7 +222,6 @@ def train(dataset):
 
     # Training loop.
     steps_per_epoch = len(train_data) // FLAGS.batch_size
-    print("trainning data length", train_data)
     # Clean records
     f=open(FLAGS.record_dir + "/" + FLAGS.record_file, "w+")
     f.write("learning rate: " + str(FLAGS.learning_rate)+ "\n")
@@ -250,7 +249,7 @@ def train(dataset):
       f.close()
       print("----------------------------------")
     
-    return mnist_classifier
+    return FLAGS.model_dir
 
 
 def main(unused_argv):

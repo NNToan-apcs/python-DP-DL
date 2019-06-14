@@ -67,6 +67,10 @@ def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, 
         print(prob_fn(batch[0]))
         print('-'*10 + "A"*10 + '-'*10)
         attack_y.append(np.ones(batch_size))
+        print('-'*10 + "B"*10 + '-'*10)
+        print(np.ones(batch_size))
+        print('-'*10 + "B"*10 + '-'*10)
+        # input()
     # data not used in training, label is 0
     for batch in iterate_minibatches(test_x, test_y, batch_size, False):
         attack_x.append(prob_fn(batch[0]))
@@ -74,6 +78,13 @@ def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, 
 
     attack_x = np.vstack(attack_x)
     attack_y = np.concatenate(attack_y)
+    print('-'*10 + "C"*10 + '-'*10)
+    print(attack_x)
+    print('-'*10 + "C"*10 + '-'*10)
+    print('-'*10 + "D"*10 + '-'*10)
+    print(attack_y)
+    print('-'*10 + "D"*10 + '-'*10)
+    input()
     attack_x = attack_x.astype('float32')
     attack_y = attack_y.astype('int32')
 
@@ -200,7 +211,7 @@ def save_data():
 def load_data(data_name):
     with np.load(DATA_PATH + data_name) as f:
         train_x, train_y, test_x, test_y = [f['arr_%d' % i] for i in range(len(f.files))]
-    return train_x, trai n_y, test_x, test_y
+    return train_x, train_y, test_x, test_y
 
 
 def attack_experiment():

@@ -18,24 +18,36 @@ if not os.path.exists(MODEL_PATH):
 
 if not os.path.exists(DATA_PATH):
     os.makedirs(DATA_PATH)
-# def iterate_minibatches(inputs, targets, batch_size, shuffle=True):
+
+# UTILS FUNCTIONS
+
+def load_attack_data():
+    fname = MODEL_PATH + 'attack_train_data.npz'
+    with np.load(fname) as f:
+        train_x, train_y = [f['arr_%d' % i] for i in range(len(f.files))]
+    fname = MODEL_PATH + 'attack_test_data.npz'
+    with np.load(fname) as f:
+        test_x, test_y = [f['arr_%d' % i] for i in range(len(f.files))]
+    return train_x.astype('float32'), train_y.astype('int32'), test_x.astype('float32'), test_y.astype('int32')
+
+def iterate_minibatches(inputs, targets, batch_size, shuffle=True):
     
-#     assert len(inputs) == len(targets)
-#     if shuffle:
-#         indices = np.arange(len(inputs))
-#         np.random.shuffle(indices)
+    assert len(inputs) == len(targets)
+    if shuffle:
+        indices = np.arange(len(inputs))
+        np.random.shuffle(indices)
 
-#     start_idx = None
-#     for start_idx in range(0, len(inputs) - batch_size + 1, batch_size):
-#         if shuffle:
-#             excerpt = indices[start_idx:start_idx + batch_size]
-#         else:
-#             excerpt = slice(start_idx, start_idx + batch_size)
-#         yield inputs[excerpt], targets[excerpt]
+    start_idx = None
+    for start_idx in range(0, len(inputs) - batch_size + 1, batch_size):
+        if shuffle:
+            excerpt = indices[start_idx:start_idx + batch_size]
+        else:
+            excerpt = slice(start_idx, start_idx + batch_size)
+        yield inputs[excerpt], targets[excerpt]
 
-#     if start_idx is not None and start_idx + batch_size < len(inputs):
-#         excerpt = indices[start_idx + batch_size:] if shuffle else slice(start_idx + batch_size, len(inputs))
-#         yield inputs[excerpt], targets[excerpt]
+    if start_idx is not None and start_idx + batch_size < len(inputs):
+        excerpt = indices[start_idx + batch_size:] if shuffle else slice(start_idx + batch_size, len(inputs))
+        yield inputs[excerpt], targets[excerpt]
 
 def load_data(data_name):
     with np.load(DATA_PATH + data_name) as f:
@@ -86,6 +98,8 @@ def save_data():
         train_x, train_y = shadow_i_x[:target_size], shadow_i_y[:target_size]
         test_x, test_y = shadow_i_x[target_size:], shadow_i_y[target_size:]
         np.savez(DATA_PATH + 'shadow{}_data.npz'.format(i), train_x, train_y, test_x, test_y)
+
+# MODEL STRUCTURE
 
 def cnn_model_fn(features, labels, mode):
   """Model function for a CNN."""
@@ -139,58 +153,44 @@ def cnn_model_fn(features, labels, mode):
                                       loss=scalar_loss,
                                       eval_metric_ops=eval_metric_ops)
 
+# TRAINING FUNCTIONS
 
 def train_target_model(dataset, save=True):
     train_x, train_y, test_x, test_y = dataset
     batchSize=100
-    # target_model = train_model(dataset)
-    export_dir="D:\DL_models\mnist_sgd_60"
+    
+    modelDir = train_model(dataset)
     target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
-                                        model_dir=export_dir)
+                                        model_dir=modelDir)
     # test data for attack model
     attack_x, attack_y = [], []
-    attack_i_x, attack_i_y = [], []
     # data used in training, label is 1
-    pred_input_fn_train = tf.estimator.inputs.numpy_input_fn(
-        x={'x': train_x},
+    for batch in iterate_minibatches(train_x, train_y, batchSize, False):
+        pred_input_fn_train = tf.estimator.inputs.numpy_input_fn(
+        x={'x': batch[0]},
         y=None, 
         batch_size=batchSize,
         num_epochs=1,
         shuffle=False,
         num_threads=1)
 
-    predict_results = target_model.predict(pred_input_fn_train) 
-    print(predict_results)
-    for idx, prediction in enumerate(predict_results):
-        if( idx == 0):
-            print("id - labels - probabilities")
-            # Get the indices of maximum element in numpy array
-            # label = prediction['class_ids'][0]
-        print("BUILDING ATTACK TRAINING SET ----- IN")
-        attack_i_x.append(prediction['probabilities'])
-        attack_i_y.append(np.ones(batchSize))
-        print(idx, "-",  prediction['class_ids'], "-", prediction['probabilities'])
+        predict_results = target_model.predict(pred_input_fn_train) 
+        attack_x.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
+        attack_y.append(np.ones(batchSize))
 
-    # data not used in training, label is 0
-    pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
-        x={'x': test_x},
+    # data used in training, label is 0
+    for batch in iterate_minibatches(test_x, test_y, batchSize, False):
+        pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
+        x={'x': batch[0]},
         y=None, 
         batch_size=batchSize,
         num_epochs=1,
         shuffle=False,
         num_threads=1)
 
-    predict_results = target_model.predict(pred_input_fn_test) 
-        
-    for idx, prediction in enumerate(predict_results):
-        if( idx == 0):
-            print("id - labels - probabilities")
-        # Get the indices of maximum element in numpy array
-        # label = prediction['class_ids'][0]
-        print("BUILDING ATTACK TRAINING SET ----- OUT")
-        attack_i_x.append(prediction['probabilities'])
-        attack_i_y.append(np.ones(batchSize))
-        print(idx, "-",  prediction['class_ids'], "-", prediction['probabilities'])
+        predict_results = target_model.predict(pred_input_fn_test) 
+        attack_x.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
+        attack_y.append(np.ones(batchSize))
 
     attack_x = np.vstack(attack_x)
     attack_y = np.concatenate(attack_y)
@@ -199,12 +199,10 @@ def train_target_model(dataset, save=True):
 
     if save:
         np.savez(MODEL_PATH + 'attack_test_data.npz', attack_x, attack_y)
-        np.savez(MODEL_PATH + 'target_model.npz', *target_model)
+        # np.savez(MODEL_PATH + 'target_model.npz', *target_model)
 
     classes = np.concatenate([train_y, test_y])
     return attack_x, attack_y, classes
-
-
 
 
 def train_shadow_models(dataset, save=True):
@@ -212,55 +210,44 @@ def train_shadow_models(dataset, save=True):
     attack_x, attack_y = [], []
     classes = []
     batchSize = 100
-    n_shadow = 20
+    n_shadow = 10
     for i in range(n_shadow):
         print( 'Training shadow model {}'.format(i))
         data = load_data('shadow{}_data.npz'.format(i))
         train_x, train_y, test_x, test_y = data
-        shadow_model = train_model(data)
+        modelDir = train_model(dataset)
+        shadow_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
+                                        model_dir=modelDir)
         # Predict 
         attack_i_x, attack_i_y = [], []
         # data used in training, label is 1
-        pred_input_fn_train = tf.estimator.inputs.numpy_input_fn(
-            x={'x': train_x},
+        # data used in training, label is 1
+        for batch in iterate_minibatches(train_x, train_y, batchSize, False):
+            pred_input_fn_train = tf.estimator.inputs.numpy_input_fn(
+            x={'x': batch[0]},
             y=None, 
             batch_size=batchSize,
             num_epochs=1,
             shuffle=False,
             num_threads=1)
 
-        predict_results = shadow_model.predict(pred_input_fn_train) 
-        
-        for idx, prediction in enumerate(predict_results):
-            if( idx == 0):
-                print("id - labels - probabilities")
-            # Get the indices of maximum element in numpy array
-            # label = prediction['class_ids'][0]
-            print("BUILDING ATTACK TRAINING SET ----- IN")
-            attack_i_x.append(prediction['probabilities'])
+            predict_results = shadow_model.predict(pred_input_fn_train) 
+            attack_i_x.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
             attack_i_y.append(np.ones(batchSize))
-            print(idx, "-",  prediction['class_ids'], "-", prediction['probabilities'])
 
-        # data not used in training, label is 0
-        pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
-            x={'x': test_x},
+        # data used in training, label is 0
+        for batch in iterate_minibatches(test_x, test_y, batchSize, False):
+            pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
+            x={'x': batch[0]},
             y=None, 
             batch_size=batchSize,
             num_epochs=1,
             shuffle=False,
             num_threads=1)
 
-        predict_results = shadow_model.predict(pred_input_fn_test) 
-        
-        for idx, prediction in enumerate(predict_results):
-            if( idx == 0):
-                print("id - labels - probabilities")
-            # Get the indices of maximum element in numpy array
-            # label = prediction['class_ids'][0]
-            print("BUILDING ATTACK TRAINING SET ----- OUT")
-            attack_i_x.append(prediction['probabilities'])
+            predict_results = shadow_model.predict(pred_input_fn_test) 
+            attack_i_x.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
             attack_i_y.append(np.ones(batchSize))
-            print(idx, "-",  prediction['class_ids'], "-", prediction['probabilities'])
         attack_x += attack_i_x
         attack_y += attack_i_y
         classes.append(np.concatenate([train_y, test_y]))
@@ -275,19 +262,56 @@ def train_shadow_models(dataset, save=True):
 
     return attack_x, attack_y, classes
 
+# def train_attack_model(classes, dataset=None):
+#     if dataset is None:
+#         dataset = load_attack_data()
 
+#     train_x, train_y, test_x, test_y = dataset
+
+#     train_classes, test_classes = classes
+#     train_indices = np.arange(len(train_x))
+#     test_indices = np.arange(len(test_x))
+#     unique_classes = np.unique(train_classes)
+
+#     true_y = []
+#     pred_y = []
+#     for c in unique_classes:
+#         print( 'Training attack model for class {}...'.format(c))
+#         c_train_indices = train_indices[train_classes == c]
+#         c_train_x, c_train_y = train_x[c_train_indices], train_y[c_train_indices]
+#         c_test_indices = test_indices[test_classes == c]
+#         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
+#         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
+#         modelDir = train_model(c_dataset)
+#         target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
+#                                         model_dir=modelDir)
+#         true_y.append(c_test_y)
+#         pred_y.append(c_pred_y)
+
+#     print( '-' * 10 + 'FINAL EVALUATION' + '-' * 10 + '\n')
+#     true_y = np.concatenate(true_y)
+#     pred_y = np.concatenate(pred_y)
+#     print( 'Testing Accuracy: {}'.format(accuracy_score(true_y, pred_y)))
+#     print( classification_report(true_y, pred_y))
+
+# MAIN PROGRAMMES
 # TODO
 def attack_experiment(unused_argv):
     # print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     # dataset = load_data('target_data.npz')
     dataset = load_mnist()
+    print('-'*10 + "A"*10 + '-'*10)
+    print("TRAINING TARGET MODEL")
+    print('-'*10 + "A"*10 + '-'*10)
     attack_test_x, attack_test_y, test_classes = train_target_model(dataset)
-    # train_target_model(dataset)
-    # model = train_model(dataset)
-    print(test_classes)
-    # print(attack_test_x)
-    # train_shadow_models(dataset)
-    # train_attack_model(dataset)
+    print('-'*10 + "B"*10 + '-'*10)
+    print("TRAINING SHADOW MODELS")
+    print('-'*10 + "B"*10 + '-'*10)
+    train_shadow_models(dataset)
+    print('-'*10 + "C"*10 + '-'*10)
+    print("TRAINING ATTACK MODEL")
+    print('-'*10 + "C"*10 + '-'*10)
+    train_attack_model(dataset)
 def main(unused_argv):
     dataset = load_mnist()
     # TODO: LOAD model from estimators
