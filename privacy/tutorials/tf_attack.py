@@ -159,7 +159,7 @@ def train_target_model(dataset, save=True):
     train_x, train_y, test_x, test_y = dataset
     batchSize=100
     
-    modelDir = train_model(dataset)
+    modelDir = train_model(dataset, "target")
     target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                         model_dir=modelDir)
     # test data for attack model
@@ -215,7 +215,7 @@ def train_shadow_models(dataset, save=True):
         print( 'Training shadow model {}'.format(i))
         data = load_data('shadow{}_data.npz'.format(i))
         train_x, train_y, test_x, test_y = data
-        modelDir = train_model(dataset)
+        modelDir = train_model(dataset, "shadow")
         shadow_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                         model_dir=modelDir)
         # Predict 
@@ -311,7 +311,7 @@ def attack_experiment(unused_argv):
     print('-'*10 + "C"*10 + '-'*10)
     print("TRAINING ATTACK MODEL")
     print('-'*10 + "C"*10 + '-'*10)
-    train_attack_model(dataset)
+    # train_attack_model(dataset)
 def main(unused_argv):
     dataset = load_mnist()
     # TODO: LOAD model from estimators

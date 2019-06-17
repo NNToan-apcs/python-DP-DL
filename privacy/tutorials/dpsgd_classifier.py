@@ -60,17 +60,10 @@ flags.DEFINE_integer(
 
 flags.DEFINE_string('record_dir', "./record_data" , 'Model records dir')
 # modeldir =  "/home/toan/Desktop/DL_models/" # UBUNTU
-modeldir =  "D:/DL_models/" # Window
-modelName = "mnist_sgd_10"
-if os.path.exists(modeldir + modelName):
-  i=1
-  while os.path.exists(modeldir + modelName + '_' + str(i)):
-    i+=1
-  flags.DEFINE_string('model_dir', modeldir +  modelName + '_' + str(i), 'Model directory')
-  flags.DEFINE_string('record_file', modelName + '_' + str(i) + ".txt" , 'Model records file')
-else:
-  flags.DEFINE_string('model_dir', modeldir +  modelName, 'Model directory')
-  flags.DEFINE_string('record_file', modelName + ".txt" , 'Model records file')
+
+flags.DEFINE_string('model_dir', "D:/DL_models/mnist_sgd_5", 'Model directory')
+flags.DEFINE_string('record_file', "mnist_sgd_5.txt" , 'Model records file')
+
 class EpsilonPrintingTrainingHook(tf.estimator.SessionRunHook):
   """Training hook to print current value of epsilon after an epoch."""
 
@@ -195,17 +188,31 @@ def load_mnist():
 
   return train_data, train_labels, test_data, test_labels
 
-def train(dataset):
+def train(dataset, model_name):
     # BLACKBOX MODEL TRAINING 
     tf.logging.set_verbosity(tf.logging.INFO)
     if FLAGS.dpsgd and FLAGS.batch_size % FLAGS.microbatches != 0:
       raise ValueError('Number of microbatches should divide evenly batch_size')
 
+    # modelDir config
+    modelParentDir =  "D:/DL_models/" # Window
+    modelName = "mnist_"+ model_name + "_sgd_" + str(FLAGS.epochs)
+    modelDir = modelParentDir + modelName
+    if os.path.exists(modelDir):
+      print("FOLDER IS EXISTS")
+      i=1
+      while os.path.exists(modelDir + '_' + str(i)):
+        i+=1
+      modelDir = modelDir + '_' + str(i)
+      record_file = modelName + '_' + str(i)
+    else:
+      print("FOLDER IS NOT EXIST")
+    
     # Load training and test data.
     train_data, train_labels, test_data, test_labels = dataset
     # Instantiate the tf.Estimator.
     mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
-                                              model_dir=FLAGS.model_dir)
+                                              model_dir=modelDir)
 
     # Create tf.Estimator input functions for the training and test data.
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -223,7 +230,7 @@ def train(dataset):
     # Training loop.
     steps_per_epoch = len(train_data) // FLAGS.batch_size
     # Clean records
-    f=open(FLAGS.record_dir + "/" + FLAGS.record_file, "w+")
+    f=open(record_file + "/" + record_file, "w+")
     f.write("learning rate: " + str(FLAGS.learning_rate)+ "\n")
     f.write("noise multiplier: " + str(FLAGS.noise_multiplier) + "\n")
     f.write("Clipping norm: " + str(FLAGS.l2_norm_clip) + "\n")
@@ -231,7 +238,7 @@ def train(dataset):
     f.write("delta: 10e-5 \n")
     f.close()
     for epoch in range(1, FLAGS.epochs + 1):
-      f=open(FLAGS.record_dir + "/" + FLAGS.record_file, "a+")
+      f=open(FLAGS.record_dir + "/" + record_file, "a+")
       print("-------------------------------------------")
       f.write("EPOCH: " + str(epoch) +"/" + str(FLAGS.epochs) + "\n")
       print("EPOCH", epoch,"/", FLAGS.epochs)
@@ -243,13 +250,13 @@ def train(dataset):
       # Evaluate the model and print results
       eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
       test_accuracy = eval_results['accuracy']
-      f=open(FLAGS.record_dir + "/" + FLAGS.record_file, "a+")
+      f=open(FLAGS.record_dir + "/" + record_file, "a+")
       f.write('Test accuracy after %d epochs is: %.3f \n' % (epoch, 100*test_accuracy))
       print('Test accuracy after %d epochs is: %.3f' % (epoch, 100*test_accuracy))
       f.close()
       print("----------------------------------")
     
-    return FLAGS.model_dir
+    return modelDir
 
 
 def main(unused_argv):
