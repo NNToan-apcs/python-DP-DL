@@ -63,13 +63,13 @@ def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, 
     # data used in training, label is 1
     for batch in iterate_minibatches(train_x, train_y, batch_size, False):
         attack_x.append(prob_fn(batch[0]))
-        print('-'*10 + "A"*10 + '-'*10)
-        print(prob_fn(batch[0]))
-        print('-'*10 + "A"*10 + '-'*10)
+        # print('-'*10 + "A"*10 + '-'*10)
+        # print(prob_fn(batch[0]))
+        # print('-'*10 + "A"*10 + '-'*10)
         attack_y.append(np.ones(batch_size))
-        print('-'*10 + "B"*10 + '-'*10)
-        print(np.ones(batch_size))
-        print('-'*10 + "B"*10 + '-'*10)
+        # print('-'*10 + "B"*10 + '-'*10)
+        # print(np.ones(batch_size))
+        # print('-'*10 + "B"*10 + '-'*10)
         # input()
     # data not used in training, label is 0
     for batch in iterate_minibatches(test_x, test_y, batch_size, False):
@@ -78,13 +78,13 @@ def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, 
 
     attack_x = np.vstack(attack_x)
     attack_y = np.concatenate(attack_y)
-    print('-'*10 + "C"*10 + '-'*10)
-    print(attack_x)
-    print('-'*10 + "C"*10 + '-'*10)
-    print('-'*10 + "D"*10 + '-'*10)
-    print(attack_y)
-    print('-'*10 + "D"*10 + '-'*10)
-    input()
+    # print('-'*10 + "C"*10 + '-'*10)
+    # print(attack_x)
+    # print('-'*10 + "C"*10 + '-'*10)
+    # print('-'*10 + "D"*10 + '-'*10)
+    # print(attack_y)
+    # print('-'*10 + "D"*10 + '-'*10)
+    
     attack_x = attack_x.astype('float32')
     attack_y = attack_y.astype('int32')
 
@@ -93,6 +93,8 @@ def train_target_model(dataset, epochs=100, batch_size=100, learning_rate=0.01, 
         np.savez(MODEL_PATH + 'target_model.npz', *lasagne.layers.get_all_param_values(output_layer))
 
     classes = np.concatenate([train_y, test_y])
+    # print("11111", len(np.unique(train_y)), len(np.unique(test_y)))
+    # input()
     return attack_x, attack_y, classes
 
 
@@ -125,6 +127,8 @@ def train_shadow_models(n_hidden=50, epochs=100, n_shadow=20, learning_rate=0.05
         attack_x += attack_i_x
         attack_y += attack_i_y
         classes.append(np.concatenate([train_y, test_y]))
+        # print("22222", len(np.unique(train_y)), len(np.unique(test_y)))
+        # input()
     # train data for attack model
     attack_x = np.vstack(attack_x)
     attack_y = np.concatenate(attack_y)
@@ -145,19 +149,42 @@ def train_attack_model(classes, dataset=None, n_hidden=50, learning_rate=0.01, b
     train_x, train_y, test_x, test_y = dataset
 
     train_classes, test_classes = classes
+
     train_indices = np.arange(len(train_x))
     test_indices = np.arange(len(test_x))
     unique_classes = np.unique(train_classes)
+    print("TTTTT", train_indices)
+    print("UUUUU", test_indices)
+    print("VVVVV", unique_classes)
+    # f=open("./theano_train_y.txt", "w+")
+    # f.write(str(train_y)+ "\n")
+    print(train_y)
+    input()
 
     true_y = []
     pred_y = []
     for c in unique_classes:
         print( 'Training attack model for class {}...'.format(c))
+        print("AAAAA", train_classes)
+        print("AAAAA", type(train_classes))
+        print("AAAAA", c)
+        print("AAAAA", train_indices[train_classes == c])
+      
         c_train_indices = train_indices[train_classes == c]
         c_train_x, c_train_y = train_x[c_train_indices], train_y[c_train_indices]
+        print("XXXXX", c_train_indices)
+        print("YYYYY", train_y[c_train_indices])
         c_test_indices = test_indices[test_classes == c]
         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
+
         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
+        print("AAAAA", len(np.unique(c_train_x)))
+        print("BBBBB", len(np.unique(c_train_y)))
+        print("BBBBB", np.unique(c_train_y))
+        print("CCCCC", len(np.unique(c_test_x)))
+        print("DDDDD", len(np.unique(c_test_y)))
+        print("DDDDD", np.unique(c_test_y))
+        input()
         c_pred_y = train_model(c_dataset, n_hidden=n_hidden, epochs=epochs, learning_rate=learning_rate,
                                batch_size=batch_size, model=model, rtn_layer=False, l2_ratio=l2_ratio)
         true_y.append(c_test_y)
@@ -201,6 +228,7 @@ def save_data():
 
     for i in range(args.n_shadow):
         print( 'Saving data for shadow model {}'.format(i))
+        
         shadow_i_indices = np.random.choice(shadow_indices, 2 * target_size, replace=False)
         shadow_i_x, shadow_i_y = shadow_x[shadow_i_indices], shadow_y[shadow_i_indices]
         train_x, train_y = shadow_i_x[:target_size], shadow_i_y[:target_size]
@@ -212,11 +240,54 @@ def load_data(data_name):
     with np.load(DATA_PATH + data_name) as f:
         train_x, train_y, test_x, test_y = [f['arr_%d' % i] for i in range(len(f.files))]
     return train_x, train_y, test_x, test_y
+import tensorflow as tf
+def load_mnist():
+  """Loads MNIST and preprocesses to combine training and validation data."""
+  train, test = tf.keras.datasets.mnist.load_data()
+  train_data, train_labels = train
+  test_data, test_labels = test
 
+  train_data = np.array(train_data, dtype=np.float32)
+  test_data = np.array(test_data, dtype=np.float32)
+
+  train_labels = np.array(train_labels, dtype=np.int32)
+  test_labels = np.array(test_labels, dtype=np.int32)
+
+  assert train_data.min() == 0.
+  assert train_data.max() == 255.
+  assert test_data.min() == 0.
+  assert test_data.max() == 255.
+  assert train_labels.ndim == 1
+  assert test_labels.ndim == 1
+
+  return train_data, train_labels, test_data, test_labels
 
 def attack_experiment():
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     dataset = load_data('target_data.npz')
+    train_x, train_y, test_x, test_y = dataset
+    # print(train_x[0])
+    # print("-"*20)
+    # print(test_x[0])
+    # input()
+    # dataset = load_mnist()
+    # train_x, train_y, test_x, test_y = dataset
+    # # print(train_x.shape)
+    # # print(train_y.shape)
+    # # print(test_x.shape)
+    # # print(test_y.shape)
+    # # print(np.reshape(train_x, [-1, 28, 28]).shape)
+    # # input()
+    # print(train_x_2.shape)
+    # print(train_y_2.shape)
+    # print(test_x_2.shape)
+    # print(test_y_2.shape)
+    # train_x = np.reshape(train_x, [-1,784])
+    # test_x = np.reshape(test_x, [-1,784])
+    # print(train_x[0])
+    # print("-"*20)
+    # print(test_x[0])
+    # input()
     attack_test_x, attack_test_y, test_classes = train_target_model(
         dataset=dataset,
         epochs=args.target_epochs,
@@ -240,6 +311,12 @@ def attack_experiment():
 
     print( '-' * 10 + 'TRAIN ATTACK' + '-' * 10 + '\n')
     dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
+    print(attack_train_x.shape)
+    print(attack_train_y.shape)
+    print(attack_test_x.shape)
+    print(attack_test_y.shape)
+    print('Z'*20)
+    input()
     train_attack_model(
         dataset=dataset,
         epochs=args.attack_epochs,
@@ -250,7 +327,7 @@ def attack_experiment():
         model=args.attack_model,
         classes=(train_classes, test_classes))
 
-
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('train_feat', type=str)
@@ -268,7 +345,7 @@ if __name__ == '__main__':
     parser.add_argument('--target_learning_rate', type=float, default=0.01)
     parser.add_argument('--target_batch_size', type=int, default=100)
     parser.add_argument('--target_n_hidden', type=int, default=50)
-    parser.add_argument('--target_epochs', type=int, default=50)
+    parser.add_argument('--target_epochs', type=int, default=5)
     parser.add_argument('--target_l2_ratio', type=float, default=1e-6)
 
     # attack model configuration
@@ -276,7 +353,7 @@ if __name__ == '__main__':
     parser.add_argument('--attack_learning_rate', type=float, default=0.01)
     parser.add_argument('--attack_batch_size', type=int, default=100)
     parser.add_argument('--attack_n_hidden', type=int, default=50)
-    parser.add_argument('--attack_epochs', type=int, default=50)
+    parser.add_argument('--attack_epochs', type=int, default=5)
     parser.add_argument('--attack_l2_ratio', type=float, default=1e-6)
 
     # parse configuration

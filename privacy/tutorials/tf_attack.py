@@ -11,6 +11,8 @@ from dpsgd_classifier import train as train_model
 
 from utils import load_trained_indices, get_data_indices, load_mnist
 import argparse
+
+from sklearn.metrics import classification_report, accuracy_score
 MODEL_PATH = './model/'
 DATA_PATH = './data/'
 if not os.path.exists(MODEL_PATH):
@@ -53,6 +55,12 @@ def load_data(data_name):
     with np.load(DATA_PATH + data_name) as f:
         train_x, train_y, test_x, test_y = [f['arr_%d' % i] for i in range(len(f.files))]
     return train_x, train_y, test_x, test_y
+
+def load_attack_classes(class_name):
+    with np.load(MODEL_PATH + class_name) as f:
+        classes = [f['arr_%d' % i] for i in range(len(f.files))]
+    return classes[0] 
+
 
 def save_data():
     print( '-' * 10 + 'SAVING DATA TO DISK' + '-' * 10 + '\n')
@@ -101,57 +109,108 @@ def save_data():
 
 # MODEL STRUCTURE
 
-def cnn_model_fn(features, labels, mode):
-  """Model function for a CNN."""
-  
-  print("----------------------MODE----------------------------------------")
-  print("Mode = ", mode)
-  print("------------------------------------------------------------------")
-  # Define CNN architecture using tf.keras.layers.
-  input_layer = tf.reshape(features['x'], [-1, 28, 28, 1])
-  y = tf.keras.layers.Conv2D(16, 8,
-                             strides=2,
-                             padding='same',
-                             activation='relu').apply(input_layer)
-  y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
-  y = tf.keras.layers.Conv2D(32, 4,
-                             strides=2,
-                             padding='valid',
-                             activation='relu').apply(y)
-  y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
-  y = tf.keras.layers.Flatten().apply(y)
-  y = tf.keras.layers.Dense(32, activation='relu').apply(y)
-  logits = tf.keras.layers.Dense(10).apply(y)
+def softmax_model_fn(features, labels, mode):
+  """Model function for a Softmax regression."""
+  with tf.device('/gpu:0'):
+    y = tf.keras.layers.Dense(10, activation='softmax').apply(features['x'])
+    logits = tf.keras.layers.Dense(2).apply(y)
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        
+        predicted_classes = tf.argmax(logits, 1)
+        predictions = {
+            'class_ids': predicted_classes[:, tf.newaxis],
+            'probabilities': 100*tf.nn.softmax(logits),
+            # 'logits': logits,
+        }
+        return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
-  if mode == tf.estimator.ModeKeys.PREDICT:
-    predicted_classes = tf.argmax(logits, 1)
-    predictions = {
-        'class_ids': predicted_classes[:, tf.newaxis],
-        'probabilities': 100*tf.nn.softmax(logits),
-        # 'logits': logits,
-    }
-    return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
-  
-  
 
-  # Add evaluation metrics (for EVAL mode).
-  if mode == tf.estimator.ModeKeys.EVAL:
-    # Calculate loss as a vector (to support microbatches in DP-SGD).
     vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits)
     # Define mean of loss across minibatch (for reporting through tf.Estimator).
     scalar_loss = tf.reduce_mean(vector_loss)
-    eval_metric_ops = {
-        'accuracy':
-            tf.metrics.accuracy(
-                labels=labels,
-                predictions=tf.argmax(input=logits, axis=1))
-    }
 
-    return tf.estimator.EstimatorSpec(mode=mode,
-                                      loss=scalar_loss,
-                                      eval_metric_ops=eval_metric_ops)
+    # Configure the training op (for TRAIN mode).
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        optimizer = GradientDescentOptimizer(learning_rate=FLAGS.learning_rate)
+        training_hooks = []
+        opt_loss = scalar_loss
+        global_step = tf.train.get_global_step()
+        train_op = optimizer.minimize(loss=opt_loss, global_step=global_step)
+        # In the following, we pass the mean of the loss (scalar_loss) rather than
+        # the vector_loss because tf.estimator requires a scalar loss. This is only
+        # used for evaluation and debugging by tf.estimator. The actual loss being
+        # minimized is opt_loss defined above and passed to optimizer.minimize().
+        return tf.estimator.EstimatorSpec(mode=mode,
+                                        loss=scalar_loss,
+                                        train_op=train_op,
+                                        training_hooks=training_hooks)
+
+    # Add evaluation metrics (for EVAL mode).
+    elif mode == tf.estimator.ModeKeys.EVAL:
+        eval_metric_ops = {
+            'accuracy':
+                tf.metrics.accuracy(
+                    labels=labels,
+                    predictions=tf.argmax(input=logits, axis=1))
+        }
+
+        return tf.estimator.EstimatorSpec(mode=mode,
+                                        loss=scalar_loss,
+                                        eval_metric_ops=eval_metric_ops)
+
+def cnn_model_fn(features, labels, mode):
+  """Model function for a CNN."""
+  with tf.device('/gpu:0'):
+    print("----------------------MODE----------------------------------------")
+    print("Mode = ", mode)
+    print("------------------------------------------------------------------")
+    # Define CNN architecture using tf.keras.layers.
+    input_layer = tf.reshape(features['x'], [-1, 28, 28, 1])
+    y = tf.keras.layers.Conv2D(16, 8,
+                                strides=2,
+                                padding='same',
+                                activation='relu').apply(input_layer)
+    y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
+    y = tf.keras.layers.Conv2D(32, 4,
+                                strides=2,
+                                padding='valid',
+                                activation='relu').apply(y)
+    y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
+    y = tf.keras.layers.Flatten().apply(y)
+    y = tf.keras.layers.Dense(32, activation='relu').apply(y)
+    logits = tf.keras.layers.Dense(10).apply(y)
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        predicted_classes = tf.argmax(logits, 1)
+        predictions = {
+            'class_ids': predicted_classes[:, tf.newaxis],
+            'probabilities': 100*tf.nn.softmax(logits),
+            # 'logits': logits,
+        }
+        return tf.estimator.EstimatorSpec(mode, predictions=predictions)
+
+    
+    
+
+    # Add evaluation metrics (for EVAL mode).
+    if mode == tf.estimator.ModeKeys.EVAL:
+        # Calculate loss as a vector (to support microbatches in DP-SGD).
+        vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=labels, logits=logits)
+        # Define mean of loss across minibatch (for reporting through tf.Estimator).
+        scalar_loss = tf.reduce_mean(vector_loss)
+        eval_metric_ops = {
+            'accuracy':
+                tf.metrics.accuracy(
+                    labels=labels,
+                    predictions=tf.argmax(input=logits, axis=1))
+        }
+
+        return tf.estimator.EstimatorSpec(mode=mode,
+                                        loss=scalar_loss,
+                                        eval_metric_ops=eval_metric_ops)
 
 # TRAINING FUNCTIONS
 
@@ -159,7 +218,7 @@ def train_target_model(dataset, save=True):
     train_x, train_y, test_x, test_y = dataset
     batchSize=100
     
-    modelDir = train_model(dataset, "target")
+    modelDir = train_model(dataset, "target", 'nn')
     target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                         model_dir=modelDir)
     # test data for attack model
@@ -190,18 +249,19 @@ def train_target_model(dataset, save=True):
 
         predict_results = target_model.predict(pred_input_fn_test) 
         attack_x.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
-        attack_y.append(np.ones(batchSize))
+        attack_y.append(np.zeros(batchSize))
 
     attack_x = np.vstack(attack_x)
     attack_y = np.concatenate(attack_y)
     attack_x = attack_x.astype('float32')
     attack_y = attack_y.astype('int32')
+    classes = np.concatenate([train_y, test_y])
 
     if save:
         np.savez(MODEL_PATH + 'attack_test_data.npz', attack_x, attack_y)
+        np.savez(MODEL_PATH + 'attack_test_classes.npz', classes)
         # np.savez(MODEL_PATH + 'target_model.npz', *target_model)
 
-    classes = np.concatenate([train_y, test_y])
     return attack_x, attack_y, classes
 
 
@@ -215,7 +275,7 @@ def train_shadow_models(dataset, save=True):
         print( 'Training shadow model {}'.format(i))
         data = load_data('shadow{}_data.npz'.format(i))
         train_x, train_y, test_x, test_y = data
-        modelDir = train_model(dataset, "shadow")
+        modelDir = train_model(dataset, "shadow", 'nn')
         shadow_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                         model_dir=modelDir)
         # Predict 
@@ -247,10 +307,11 @@ def train_shadow_models(dataset, save=True):
 
             predict_results = shadow_model.predict(pred_input_fn_test) 
             attack_i_x.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
-            attack_i_y.append(np.ones(batchSize))
+            attack_i_y.append(np.zeros(batchSize))
         attack_x += attack_i_x
         attack_y += attack_i_y
         classes.append(np.concatenate([train_y, test_y]))
+
     # train data for attack model
     attack_x = np.vstack(attack_x)
     attack_y = np.concatenate(attack_y)
@@ -259,45 +320,125 @@ def train_shadow_models(dataset, save=True):
     classes = np.concatenate(classes)
     if save:
         np.savez(MODEL_PATH + 'attack_train_data.npz', attack_x, attack_y)
+        np.savez(MODEL_PATH + 'attack_train_classes.npz', classes)
 
     return attack_x, attack_y, classes
 
-# def train_attack_model(classes, dataset=None):
-#     if dataset is None:
-#         dataset = load_attack_data()
+def train_attack_model(classes=None, dataset=None):
+    if dataset is None:
+        dataset = load_attack_data()
+    if classes is None:
+        train_classes = load_attack_classes('attack_train_classes.npz')
 
-#     train_x, train_y, test_x, test_y = dataset
+        test_classes = load_attack_classes('attack_test_classes.npz')
 
-#     train_classes, test_classes = classes
-#     train_indices = np.arange(len(train_x))
-#     test_indices = np.arange(len(test_x))
-#     unique_classes = np.unique(train_classes)
 
-#     true_y = []
-#     pred_y = []
-#     for c in unique_classes:
-#         print( 'Training attack model for class {}...'.format(c))
-#         c_train_indices = train_indices[train_classes == c]
-#         c_train_x, c_train_y = train_x[c_train_indices], train_y[c_train_indices]
-#         c_test_indices = test_indices[test_classes == c]
-#         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
-#         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
-#         modelDir = train_model(c_dataset)
-#         target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
-#                                         model_dir=modelDir)
-#         true_y.append(c_test_y)
-#         pred_y.append(c_pred_y)
+    else:
+        train_classes, test_classes = classes
+    train_x, train_y, test_x, test_y = dataset
 
-#     print( '-' * 10 + 'FINAL EVALUATION' + '-' * 10 + '\n')
-#     true_y = np.concatenate(true_y)
-#     pred_y = np.concatenate(pred_y)
-#     print( 'Testing Accuracy: {}'.format(accuracy_score(true_y, pred_y)))
-#     print( classification_report(true_y, pred_y))
+    train_indices = np.arange(len(train_x))
+    test_indices = np.arange(len(test_x))
+    unique_classes = np.unique(train_classes)
+
+    true_y = []
+    pred_y = []
+    for c in unique_classes:
+        print( 'Training attack model for class {}...'.format(c))
+        
+        c_train_indices = train_indices[train_classes == c]
+
+        c_train_x, c_train_y = train_x[c_train_indices], train_y[c_train_indices]
+        
+        c_test_indices = test_indices[test_classes == c]
+        c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
+
+        c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
+        
+        modelDir = train_model(c_dataset, "class_" + str(c) + "_attack", 'softmax')
+        # Train attack model with class c
+        attack_model = tf.estimator.Estimator(model_fn=softmax_model_fn,
+                                        model_dir=modelDir)
+
+
+        #prob = lasagne.layers.get_output(output_layer, input_var, deterministic=True)
+        # prob_fn = theano.function([input_var], prob)
+        # # data used in training, label is 1
+        # for batch in iterate_minibatches(train_x, train_y, batch_size, False):
+        #     attack_x.append(prob_fn(batch[0])
+
+        #     test_prediction = lasagne.layers.get_output(output_layer, deterministic=True)
+        # test_fn = theano.function([input_var], test_prediction)
+        #  pred_y = []
+        # if batch_size > len(test_y):
+        #     batch_size = len(test_y)
+
+        # for input_batch, _ in iterate_minibatches(test_x, test_y, batch_size, shuffle=False):
+        #     pred = test_fn(input_batch)
+        #     pred_y.append(np.argmax(pred, axis=1))
+        # pred_y = np.concatenate(pred_y)
+        # print ('Testing Accuracy: {}'.format(accuracy_score(test_y, pred_y)))
+        # print (classification_report(test_y, pred_y))
+
+       
+        
+        # predict c_test_x c_test_y
+
+
+        # c_pred_y=[]
+        # batchSize=100
+        # for batch, _ in iterate_minibatches(c_test_x, c_test_y, batchSize, False):
+        #     pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
+        #         x={'x': batch[0]},
+        #         y=None, 
+        #         batch_size=batchSize,
+        #         num_epochs=1,
+        #         shuffle=False,
+        #         num_threads=1)
+        #     print("AAAAAA", batch[0])
+        #     print("BBBBBB", c_test_y[0])
+        #     pred = attack_model.predict(pred_input_fn_test) 
+        #     # print(pred)
+        #     # print(enumerate(pred))
+        #     for a, b in enumerate(pred):
+        #         print(a)
+        #         print(b)
+        #         input()
+        #     c_pred_y.append(np.argmax(pred, axis=1))
+        #     c_pred_y = np.concatenate(c_pred_y)
+        #     input()
+        # true_y.append(c_test_y)
+        # pred_y.append(c_pred_y)
+            # c_pred_y.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
+        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={'x': c_test_x},
+        y=c_test_y,
+        num_epochs=1,
+        shuffle=False)
+        eval_results = attack_model.evaluate(input_fn=eval_input_fn)
+        test_accuracy = eval_results['accuracy']
+        
+        print('Test accuracy for class %d is: %.3f' % (c, 100*test_accuracy))
+        f=open("./record_data/"  + "attack_record_class_" + str(c), "a+")
+        f.write('Test accuracy for class %d is: %.3f \n' % (c, 100*test_accuracy))
+        f.close()
+        # input()
+
+    #TODO
+    print( '-' * 10 + 'FINAL EVALUATION' + '-' * 10 + '\n')
+    
+
+
+    
+    # true_y = np.concatenate(true_y)
+    # pred_y = np.concatenate(pred_y)
+    # print( 'Testing Accuracy: {}'.format(accuracy_score(true_y, pred_y)))
+    # print( classification_report(true_y, pred_y))
 
 # MAIN PROGRAMMES
 # TODO
 def attack_experiment(unused_argv):
-    # print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
+    print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     # dataset = load_data('target_data.npz')
     dataset = load_mnist()
     print('-'*10 + "A"*10 + '-'*10)
@@ -307,15 +448,19 @@ def attack_experiment(unused_argv):
     print('-'*10 + "B"*10 + '-'*10)
     print("TRAINING SHADOW MODELS")
     print('-'*10 + "B"*10 + '-'*10)
-    train_shadow_models(dataset)
+    attack_train_x, attack_train_y, train_classes = train_shadow_models(dataset)
     print('-'*10 + "C"*10 + '-'*10)
     print("TRAINING ATTACK MODEL")
     print('-'*10 + "C"*10 + '-'*10)
-    # train_attack_model(dataset)
+    dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
+    classes = (train_classes, test_classes)
+    train_attack_model(classes , dataset)
+    # input()
+    # train_attack_model()
 def main(unused_argv):
     dataset = load_mnist()
     # TODO: LOAD model from estimators
-    model = train_model(dataset)
+    model = train_model(dataset, "aaa", 'nn')
     train_data, train_labels, test_data, test_labels = dataset
 
     # Create tf.Estimator input functions for the training and test data.
@@ -365,7 +510,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print( vars(args))
     if args.save_data:
-        save_data()
+        save_data() # Check dataset which is used by this function before running!!!
     else:
         app.run(attack_experiment)
         # app.run(main)
