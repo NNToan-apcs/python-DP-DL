@@ -112,51 +112,44 @@ def save_data():
 def softmax_model_fn(features, labels, mode):
   """Model function for a Softmax regression."""
   with tf.device('/gpu:0'):
-    y = tf.keras.layers.Dense(10, activation='softmax').apply(features['x'])
-    logits = tf.keras.layers.Dense(2).apply(y)
+    # y = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
+    # logits = tf.keras.layers.Dense(2).apply(y)
+    
+    y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
+    logits = tf.keras.layers.Dense(2, activation='softmax').apply(y)
+
+    # logits = tf.keras.layers.Dense(2, activation='sigmoid').apply(features['x'])
+    # Add prediction metrics (for INFER mode).
     if mode == tf.estimator.ModeKeys.PREDICT:
-        
-        predicted_classes = tf.argmax(logits, 1)
-        predictions = {
-            'class_ids': predicted_classes[:, tf.newaxis],
-            'probabilities': 100*tf.nn.softmax(logits),
-            # 'logits': logits,
-        }
-        return tf.estimator.EstimatorSpec(mode, predictions=predictions)
-
-
-
-    vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=labels, logits=logits)
-    # Define mean of loss across minibatch (for reporting through tf.Estimator).
-    scalar_loss = tf.reduce_mean(vector_loss)
-
-    # Configure the training op (for TRAIN mode).
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = GradientDescentOptimizer(learning_rate=FLAGS.learning_rate)
-        training_hooks = []
-        opt_loss = scalar_loss
-        global_step = tf.train.get_global_step()
-        train_op = optimizer.minimize(loss=opt_loss, global_step=global_step)
-        # In the following, we pass the mean of the loss (scalar_loss) rather than
-        # the vector_loss because tf.estimator requires a scalar loss. This is only
-        # used for evaluation and debugging by tf.estimator. The actual loss being
-        # minimized is opt_loss defined above and passed to optimizer.minimize().
-        return tf.estimator.EstimatorSpec(mode=mode,
-                                        loss=scalar_loss,
-                                        train_op=train_op,
-                                        training_hooks=training_hooks)
+      predicted_classes = tf.argmax(logits, 1)
+      predictions = {
+          'class_ids': predicted_classes[:, tf.newaxis],
+          'probabilities': 100*tf.nn.softmax(logits),
+          # 'logits': logits,
+      }
+      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
     # Add evaluation metrics (for EVAL mode).
     elif mode == tf.estimator.ModeKeys.EVAL:
-        eval_metric_ops = {
-            'accuracy':
-                tf.metrics.accuracy(
-                    labels=labels,
-                    predictions=tf.argmax(input=logits, axis=1))
-        }
+    #   # Calculate loss as a vector (to support microbatches in DP-SGD).
+    #   vector_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+    #       labels=labels, logits=logits)
+      vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=labels, logits=logits)
+      # Define mean of loss across minibatch (for reporting through tf.Estimator).
+      scalar_loss = tf.reduce_mean(vector_loss)
 
-        return tf.estimator.EstimatorSpec(mode=mode,
+      eval_metric_ops = {
+          'accuracy':
+              tf.metrics.accuracy(
+                  labels=labels,
+                  predictions=tf.argmax(input=logits, axis=1),
+                #   predictions=correct_predictions
+                  )
+          
+      }
+
+      return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=scalar_loss,
                                         eval_metric_ops=eval_metric_ops)
 
@@ -181,19 +174,15 @@ def cnn_model_fn(features, labels, mode):
     y = tf.keras.layers.Flatten().apply(y)
     y = tf.keras.layers.Dense(32, activation='relu').apply(y)
     logits = tf.keras.layers.Dense(10).apply(y)
-
+    # Add prediction metrics (for INFER mode).
     if mode == tf.estimator.ModeKeys.PREDICT:
-        predicted_classes = tf.argmax(logits, 1)
-        predictions = {
-            'class_ids': predicted_classes[:, tf.newaxis],
-            'probabilities': 100*tf.nn.softmax(logits),
-            # 'logits': logits,
-        }
-        return tf.estimator.EstimatorSpec(mode, predictions=predictions)
-
-    
-    
-
+      predicted_classes = tf.argmax(logits, 1)
+      predictions = {
+          'class_ids': predicted_classes[:, tf.newaxis],
+          'probabilities': 100*tf.nn.softmax(logits),
+      }
+      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+      
     # Add evaluation metrics (for EVAL mode).
     if mode == tf.estimator.ModeKeys.EVAL:
         # Calculate loss as a vector (to support microbatches in DP-SGD).
@@ -201,6 +190,7 @@ def cnn_model_fn(features, labels, mode):
             labels=labels, logits=logits)
         # Define mean of loss across minibatch (for reporting through tf.Estimator).
         scalar_loss = tf.reduce_mean(vector_loss)
+        
         eval_metric_ops = {
             'accuracy':
                 tf.metrics.accuracy(
@@ -354,62 +344,72 @@ def train_attack_model(classes=None, dataset=None):
         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
 
         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
-        
+        # f=open("./c_train_x.txt", "w+")
+        # for i in c_train_x:
+        #     f.write(str(i)+"\n")
+        # f.close()
+        # f=open("./c_train_y.txt", "w+")
+        # for i in c_train_y:
+        #     f.write(str(i)+"\n")
+        # f.close()
+        # f=open("./c_test_x.txt", "w+")
+        # for i in c_test_x:
+        #     f.write(str(i)+"\n")
+        # f.close()
+        # f=open("./c_test_y.txt", "w+")
+        # for i in c_test_y:
+        #     f.write(str(i)+"\n")
+        # f.close()
+        ##################
+        # print("A"*20)
+
+        # zero = [item for item in c_test_y if item==0]
+        # one = [item for item in c_test_y if item==1]
+       
+        # print("-"*20)
+        # print(len(c_test_y))
+
+        # print("-"*20)
+        # # print(one)
+        # print("-"*20)
+        # print(len(one))
+        # print("-"*20)
+        # # print(zero)
+        # print("-"*20)
+        # print(len(zero))
+        # print("-"*20)
+        # print(len(zero)/len(one))
+        # print("A"*20)
+        # input()
+        ###################
+
+
+        # arr = []
+        # for i in range(0,len(c_test_y)):
+        #     if(c_test_y[i]==0):
+        #        arr.append( np.array([i,[1.0,0.0]]))
+        #     elif (c_test_y[i]==1):
+        #         arr.append( np.array([i,[0.0,1.0]]))
+        # c_test_y = np.array(arr)
+        # print(c_test_y.shape)
+
+        # arr = []
+        # for i in range(0,len(c_train_y)):
+        #     if(c_train_y[i]==0):
+        #         arr.append( np.array([i,[1.0,0.0]]))
+        #     elif (c_train_y[i]==1):
+        #         arr.append( np.array([i,[0.0,1.0]]))
+        # c_train_y = np.array(arr)
+        # print(c_train_y.shape)
+
+
         modelDir = train_model(c_dataset, "class_" + str(c) + "_attack", 'softmax')
         # Train attack model with class c
         attack_model = tf.estimator.Estimator(model_fn=softmax_model_fn,
                                         model_dir=modelDir)
 
 
-        #prob = lasagne.layers.get_output(output_layer, input_var, deterministic=True)
-        # prob_fn = theano.function([input_var], prob)
-        # # data used in training, label is 1
-        # for batch in iterate_minibatches(train_x, train_y, batch_size, False):
-        #     attack_x.append(prob_fn(batch[0])
-
-        #     test_prediction = lasagne.layers.get_output(output_layer, deterministic=True)
-        # test_fn = theano.function([input_var], test_prediction)
-        #  pred_y = []
-        # if batch_size > len(test_y):
-        #     batch_size = len(test_y)
-
-        # for input_batch, _ in iterate_minibatches(test_x, test_y, batch_size, shuffle=False):
-        #     pred = test_fn(input_batch)
-        #     pred_y.append(np.argmax(pred, axis=1))
-        # pred_y = np.concatenate(pred_y)
-        # print ('Testing Accuracy: {}'.format(accuracy_score(test_y, pred_y)))
-        # print (classification_report(test_y, pred_y))
-
-       
-        
-        # predict c_test_x c_test_y
-
-
-        # c_pred_y=[]
-        # batchSize=100
-        # for batch, _ in iterate_minibatches(c_test_x, c_test_y, batchSize, False):
-        #     pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
-        #         x={'x': batch[0]},
-        #         y=None, 
-        #         batch_size=batchSize,
-        #         num_epochs=1,
-        #         shuffle=False,
-        #         num_threads=1)
-        #     print("AAAAAA", batch[0])
-        #     print("BBBBBB", c_test_y[0])
-        #     pred = attack_model.predict(pred_input_fn_test) 
-        #     # print(pred)
-        #     # print(enumerate(pred))
-        #     for a, b in enumerate(pred):
-        #         print(a)
-        #         print(b)
-        #         input()
-        #     c_pred_y.append(np.argmax(pred, axis=1))
-        #     c_pred_y = np.concatenate(c_pred_y)
-        #     input()
-        # true_y.append(c_test_y)
-        # pred_y.append(c_pred_y)
-            # c_pred_y.append( [list(item[1]['probabilities']) for item in list(enumerate(predict_results))])
+        # EVALUATION
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={'x': c_test_x},
         y=c_test_y,
@@ -418,13 +418,33 @@ def train_attack_model(classes=None, dataset=None):
         eval_results = attack_model.evaluate(input_fn=eval_input_fn)
         test_accuracy = eval_results['accuracy']
         
+        
+        # PREDICTION
+        pred_input_fn_test = tf.estimator.inputs.numpy_input_fn(
+            x={'x': c_test_x},
+            y=None, 
+            batch_size=100,
+            num_epochs=1,
+            shuffle=False,
+            num_threads=1)
+        pred = attack_model.predict(pred_input_fn_test) 
+        f=open("./evaluate/evaluate_class_"+ str(c)+ ".txt", "w+")
+        
+        for index, item in enumerate(pred):
+            # print(index, type(index))
+            # print(item['class_ids'], type(item['class_ids']))
+            # print(item['probabilities'], type(item['class_ids']))
+            if(item['class_ids'][0] != c_test_y[index]):
+                f.write(str(index) + " " + str(item['class_ids']) + " / " + str(c_test_y[index]) + " " + str(item['probabilities']) + " WRONG PREDICTION \n")
+            else:
+                f.write(str(index) + " " + str(item['class_ids']) + " / " + str(c_test_y[index]) + " " + str(item['probabilities']) + "\n")
+        f.close()  
+
         print('Test accuracy for class %d is: %.3f' % (c, 100*test_accuracy))
         f=open("./record_data/"  + "attack_record_class_" + str(c), "a+")
         f.write('Test accuracy for class %d is: %.3f \n' % (c, 100*test_accuracy))
         f.close()
-        # input()
 
-    #TODO
     print( '-' * 10 + 'FINAL EVALUATION' + '-' * 10 + '\n')
     
 
@@ -440,23 +460,23 @@ def train_attack_model(classes=None, dataset=None):
 def attack_experiment(unused_argv):
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     # dataset = load_data('target_data.npz')
-    dataset = load_mnist()
-    print('-'*10 + "A"*10 + '-'*10)
-    print("TRAINING TARGET MODEL")
-    print('-'*10 + "A"*10 + '-'*10)
-    attack_test_x, attack_test_y, test_classes = train_target_model(dataset)
-    print('-'*10 + "B"*10 + '-'*10)
-    print("TRAINING SHADOW MODELS")
-    print('-'*10 + "B"*10 + '-'*10)
-    attack_train_x, attack_train_y, train_classes = train_shadow_models(dataset)
-    print('-'*10 + "C"*10 + '-'*10)
-    print("TRAINING ATTACK MODEL")
-    print('-'*10 + "C"*10 + '-'*10)
-    dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
-    classes = (train_classes, test_classes)
-    train_attack_model(classes , dataset)
+    # dataset = load_mnist()
+    # print('-'*10 + "A"*10 + '-'*10)
+    # print("TRAINING TARGET MODEL")
+    # print('-'*10 + "A"*10 + '-'*10)
+    # attack_test_x, attack_test_y, test_classes = train_target_model(dataset)
+    # print('-'*10 + "B"*10 + '-'*10)
+    # print("TRAINING SHADOW MODELS")
+    # print('-'*10 + "B"*10 + '-'*10)
+    # attack_train_x, attack_train_y, train_classes = train_shadow_models(dataset)
+    # print('-'*10 + "C"*10 + '-'*10)
+    # print("TRAINING ATTACK MODEL")
+    # print('-'*10 + "C"*10 + '-'*10)
+    # dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
+    # classes = (train_classes, test_classes)
+    # train_attack_model(classes , dataset)
     # input()
-    # train_attack_model()
+    train_attack_model()
 def main(unused_argv):
     dataset = load_mnist()
     # TODO: LOAD model from estimators

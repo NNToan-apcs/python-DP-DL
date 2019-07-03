@@ -165,26 +165,17 @@ def train_attack_model(classes, dataset=None, n_hidden=50, learning_rate=0.01, b
     pred_y = []
     for c in unique_classes:
         print( 'Training attack model for class {}...'.format(c))
-        print("AAAAA", train_classes)
-        print("AAAAA", type(train_classes))
-        print("AAAAA", c)
-        print("AAAAA", train_indices[train_classes == c])
+       
       
         c_train_indices = train_indices[train_classes == c]
         c_train_x, c_train_y = train_x[c_train_indices], train_y[c_train_indices]
-        print("XXXXX", c_train_indices)
-        print("YYYYY", train_y[c_train_indices])
+      
         c_test_indices = test_indices[test_classes == c]
         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
 
         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
-        print("AAAAA", len(np.unique(c_train_x)))
-        print("BBBBB", len(np.unique(c_train_y)))
-        print("BBBBB", np.unique(c_train_y))
-        print("CCCCC", len(np.unique(c_test_x)))
-        print("DDDDD", len(np.unique(c_test_y)))
-        print("DDDDD", np.unique(c_test_y))
-        input()
+ 
+ 
         c_pred_y = train_model(c_dataset, n_hidden=n_hidden, epochs=epochs, learning_rate=learning_rate,
                                batch_size=batch_size, model=model, rtn_layer=False, l2_ratio=l2_ratio)
         true_y.append(c_test_y)
@@ -195,6 +186,7 @@ def train_attack_model(classes, dataset=None, n_hidden=50, learning_rate=0.01, b
     pred_y = np.concatenate(pred_y)
     print( 'Testing Accuracy: {}'.format(accuracy_score(true_y, pred_y)))
     print( classification_report(true_y, pred_y))
+    input()
 
 
 def save_data():
