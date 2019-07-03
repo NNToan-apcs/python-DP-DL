@@ -57,8 +57,8 @@ flags.DEFINE_integer('epochs', 100, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 256, 'Number of microbatches '
     '(must evenly divide batch_size)')
+# flags.DEFINE_string('model_dir', "D:\\DL_models\\mnist_sgd_100" , 'Model directory')
 flags.DEFINE_string('model_dir', "D:\\DL_models\\mnist_sgd_100" , 'Model directory')
-
 flags.DEFINE_string('record_dir', "./record_data" , 'Model records dir')
 flags.DEFINE_string('record_file', "mnist_sgd_100.txt" , 'Model records file')
 class EpsilonPrintingTrainingHook(tf.estimator.SessionRunHook):

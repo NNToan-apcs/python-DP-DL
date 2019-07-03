@@ -52,7 +52,7 @@ flags.DEFINE_float('noise_multiplier', 1.1,
 flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 256, 'Batch size')
 flags.DEFINE_float('delta', 1e-5, 'target delta')
-flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+flags.DEFINE_integer('epochs', 25, 'Number of epochs')
 flags.DEFINE_integer('soft_max_epochs', 50, 'Number of epochs')
 # flags.DEFINE_integer('epochs', 15, 'Number of epochs')
 flags.DEFINE_integer(
@@ -252,8 +252,8 @@ def train(dataset, model_name, mode='nn'):
       raise ValueError('Number of microbatches should divide evenly batch_size')
 
     # modelDir config
-    modelParentDir =  "D:/DL_models/" # Window
-    
+    # modelParentDir =  "D:/DL_models/" # Window
+    modelParentDir =  "/home/ttson/Desktop/toan_workspace/toan-env/DL_models/" # Ubuntu I63
 
     if str.find(model_name, "attack") != -1 : # softmax mode
       modelName = "mnist_"+ model_name + "_softmax_" + str(FLAGS.soft_max_epochs)
