@@ -41,7 +41,7 @@ flags.DEFINE_boolean(
     'strong_composition', True, 'If True, Use strong composition theorem to compute epsilon. If False, '
     'Use RDP.')
 flags.DEFINE_boolean(
-    'dpsgd', True, 'If True, train with DP-SGD. If False, '
+    'dpsgd', False, 'If True, train with DP-SGD. If False, '
     'train with vanilla SGD.')
 flags.DEFINE_boolean(
     'moment_accountant', True, 'If True, compute eps using moment_accountant. If False, '
@@ -52,8 +52,10 @@ flags.DEFINE_float('noise_multiplier', 1.1,
 flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 256, 'Batch size')
 flags.DEFINE_float('delta', 1e-5, 'target delta')
-flags.DEFINE_integer('epochs', 25, 'Number of epochs')
-flags.DEFINE_integer('soft_max_epochs', 50, 'Number of epochs')
+
+flags.DEFINE_integer('epochs', 30, 'Number of epochs')
+flags.DEFINE_integer('soft_max_epochs', 20, 'Number of epochs')
+
 # flags.DEFINE_integer('epochs', 15, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 256, 'Number of microbatches '
@@ -114,7 +116,14 @@ def cnn_model_fn(features, labels, mode):
     y = tf.keras.layers.Flatten().apply(y)
     y = tf.keras.layers.Dense(32, activation='relu').apply(y)
     logits = tf.keras.layers.Dense(10).apply(y)
-    
+    if mode == tf.estimator.ModeKeys.PREDICT:
+      predicted_classes = tf.argmax(logits, 1)
+      predictions = {
+          'class_ids': predicted_classes[:, tf.newaxis],
+          'probabilities': 100*tf.nn.softmax(logits),
+          # 'logits': logits,
+      }
+      return tf.estimator.EstimatorSpec(mode, predictions=predictions)
     # Calculate loss as a vector (to support microbatches in DP-SGD).
     vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits)
@@ -165,32 +174,46 @@ def cnn_model_fn(features, labels, mode):
                   labels=labels,
                   predictions=tf.argmax(input=logits, axis=1))
       }
-
+      
       return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=scalar_loss,
                                         eval_metric_ops=eval_metric_ops)
   
 
+
+
+
+
+
 def softmax_model_fn(features, labels, mode):
   """Model function for a Softmax regression."""
   with tf.device('/gpu:0'):
-    y = tf.keras.layers.Dense(10, activation='softmax').apply(features['x'])
-    logits = tf.keras.layers.Dense(2).apply(y)
+    # y = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
+    # logits = tf.keras.layers.Dense(2).apply(y)
+    y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
+    logits = tf.keras.layers.Dense(2, activation='softmax').apply(y)
+    
+    # logits = tf.keras.layers.Dense(2, activation='sigmoid').apply(features['x'])
+    
     if mode == tf.estimator.ModeKeys.PREDICT:
       predicted_classes = tf.argmax(logits, 1)
       predictions = {
           'class_ids': predicted_classes[:, tf.newaxis],
           'probabilities': 100*tf.nn.softmax(logits),
-          # 'logits': logits,
       }
-      return tf.estimator.EstimatorSpec(mode, predictions=predictions)
-
-
+      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+    #TODO
+    # print(labels.shape)
+    # print(logits.shape)
+    
+   
+    # vector_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+    #     labels=labels, logits=logits)
     vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits)
     # Define mean of loss across minibatch (for reporting through tf.Estimator).
     scalar_loss = tf.reduce_mean(vector_loss)
-
+    
     # Configure the training op (for TRAIN mode).
     if mode == tf.estimator.ModeKeys.TRAIN:
       optimizer = GradientDescentOptimizer(learning_rate=FLAGS.learning_rate)
@@ -215,7 +238,7 @@ def softmax_model_fn(features, labels, mode):
                   labels=labels,
                   predictions=tf.argmax(input=logits, axis=1))
       }
-
+      
       return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=scalar_loss,
                                         eval_metric_ops=eval_metric_ops)
@@ -282,6 +305,7 @@ def train(dataset, model_name, mode='nn'):
     # Instantiate the tf.Estimator.
     if mode == 'nn':
       print('TRAINING USING NEURON NETWORK')
+      
       mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                                 model_dir=FLAGS.model_dir)
     elif mode == 'softmax':

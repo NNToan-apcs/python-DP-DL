@@ -89,7 +89,11 @@ def train(dataset, n_hidden=50, batch_size=100, epochs=100, learning_rate=0.01, 
     print( 'Training...')
     for epoch in range(epochs):
         loss = 0
+        # print(train_y.shape)
+        # input()
+
         for input_batch, target_batch in iterate_minibatches(train_x, train_y, batch_size):
+            # print(target_batch.shape)
             loss += train_fn(input_batch, target_batch)
         loss = round(loss, 3)
         print ('Epoch {}, train loss {}'.format(epoch, loss))
