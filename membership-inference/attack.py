@@ -191,8 +191,15 @@ def train_attack_model(classes, dataset=None, n_hidden=50, learning_rate=0.01, b
 
 def save_data():
     print( '-' * 10 + 'SAVING DATA TO DISK' + '-' * 10 + '\n')
+    
+    # x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
 
-    x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
+    x, y, test_x, test_y = load_mnist()
+    x = np.reshape(x, [-1, 784])
+    test_x = np.reshape(test_x, [-1, 784])
+    # x1, y1, test_x1, test_y1 = load_mnist() 
+    
+
     if test_x is None:
         print( 'Splitting train/test data with ratio {}/{}'.format(1 - args.test_ratio, args.test_ratio))
         x, test_x, y, test_y = train_test_split(x, y, test_size=args.test_ratio, stratify=y)
@@ -257,23 +264,26 @@ def load_mnist():
 def attack_experiment():
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     dataset = load_data('target_data.npz')
+    
     train_x, train_y, test_x, test_y = dataset
     # print(train_x[0])
     # print("-"*20)
     # print(test_x[0])
     # input()
     # dataset = load_mnist()
-    # train_x, train_y, test_x, test_y = dataset
-    # # print(train_x.shape)
-    # # print(train_y.shape)
-    # # print(test_x.shape)
-    # # print(test_y.shape)
+    # train_x_2, train_y_2, test_x_2, test_y_2 = dataset
+    # print(train_x.shape)
+    # print(train_y.shape)
+    # print(test_x.shape)
+    # print(test_y.shape)
+    # print("-"*20)
     # # print(np.reshape(train_x, [-1, 28, 28]).shape)
     # # input()
     # print(train_x_2.shape)
     # print(train_y_2.shape)
     # print(test_x_2.shape)
     # print(test_y_2.shape)
+    # input()
     # train_x = np.reshape(train_x, [-1,784])
     # test_x = np.reshape(test_x, [-1,784])
     # print(train_x[0])
