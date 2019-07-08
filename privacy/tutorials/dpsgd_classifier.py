@@ -188,8 +188,8 @@ def softmax_model_fn(features, labels, mode):
   with tf.device('/gpu:0'):
     # y = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
     # logits = tf.keras.layers.Dense(2).apply(y)
-    y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
-    logits = tf.keras.layers.Dense(2, activation='softmax').apply(y)
+    # y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
+    logits = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
     
     # logits = tf.keras.layers.Dense(2, activation='sigmoid').apply(features['x'])
     
@@ -368,10 +368,13 @@ def train(dataset, model_name, mode='nn'):
 
 
 def main(unused_argv):
+  # Use to train the MNIST classifier
   tf.logging.set_verbosity(tf.logging.INFO)
   if FLAGS.dpsgd and FLAGS.batch_size % FLAGS.microbatches != 0:
     raise ValueError('Number of microbatches should divide evenly batch_size')
-
+  FLAGS.epochs = 35
+  FLAGS.model_dir = "D:/DL_models/mnist_sgd_35"
+  FLAGS.record_file = "mnist_sgd_35.txt"
   # Load training and test data.
   train_data, train_labels, test_data, test_labels = load_mnist()
 
@@ -402,6 +405,9 @@ def main(unused_argv):
   f.write("Batch size: " + str(float(FLAGS.batch_size)) + "\n")
   f.write("delta: 10e-5 \n")
   f.close()
+
+  
+
   for epoch in range(1, FLAGS.epochs + 1):
     f=open(FLAGS.record_dir + "/" + FLAGS.record_file, "a+")
     print("-------------------------------------------")
@@ -410,7 +416,7 @@ def main(unused_argv):
     print("-------------------------------------------")
     f.close()
     # Train the model for one epoch.
-    training_results = mnist_classifier.train(input_fn=train_input_fn, steps=steps_per_epoch)
+    mnist_classifier.train(input_fn=train_input_fn, steps=steps_per_epoch)
     
     
     # Evaluate the model and print results
@@ -419,7 +425,6 @@ def main(unused_argv):
     
     # Save file
     f=open(FLAGS.record_dir + "/" + FLAGS.record_file, "a+")
-    f.write('Train accuracy after %d epochs is: %.3f' % (epoch, 100*(1-scalar_loss)))
     f.write('Test accuracy after %d epochs is: %.3f \n' % (epoch, 100*test_accuracy))
     f.close()
     print("----------------------------------")

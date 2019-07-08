@@ -115,8 +115,8 @@ def softmax_model_fn(features, labels, mode):
     # y = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
     # logits = tf.keras.layers.Dense(2).apply(y)
     
-    y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
-    logits = tf.keras.layers.Dense(2, activation='softmax').apply(y)
+    # y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
+    logits = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
 
     # logits = tf.keras.layers.Dense(2, activation='sigmoid').apply(features['x'])
     # Add prediction metrics (for INFER mode).
