@@ -194,9 +194,15 @@ def save_data():
     
     # x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
 
-    x, y, test_x, test_y = load_mnist()
-    x = np.reshape(x, [-1, 784])
-    test_x = np.reshape(test_x, [-1, 784])
+    # x, y, test_x, test_y = load_mnist()
+    x, y, test_x, test_y = load_cifar_100()
+    print(x.shape)
+    print(y.shape)
+    print(test_x.shape)
+    print(test_y.shape)
+    input()
+    # x = np.reshape(x, [-1, 784])
+    # test_x = np.reshape(test_x, [-1, 784])
     # x1, y1, test_x1, test_y1 = load_mnist() 
     
 
@@ -240,12 +246,33 @@ def load_data(data_name):
         train_x, train_y, test_x, test_y = [f['arr_%d' % i] for i in range(len(f.files))]
     return train_x, train_y, test_x, test_y
 import tensorflow as tf
+
+def load_cifar_100():
+  """Loads MNIST and preprocesses to combine training and validation data."""
+  train, test = tf.keras.datasets.cifar100.load_data()
+  train_data, train_labels = train
+  test_data, test_labels = test
+
+  train_data = np.array(train_data, dtype=np.float32)
+  test_data = np.array(test_data, dtype=np.float32)
+
+  train_labels = np.array(train_labels, dtype=np.int32)
+  test_labels = np.array(test_labels, dtype=np.int32)
+
+#   assert train_data.min() == 0.
+#   assert train_data.max() == 255.
+#   assert test_data.min() == 0.
+#   assert test_data.max() == 255.
+#   assert train_labels.ndim == 1
+#   assert test_labels.ndim == 1
+
+  return train_data, train_labels, test_data, test_labels
 def load_mnist():
   """Loads MNIST and preprocesses to combine training and validation data."""
   train, test = tf.keras.datasets.mnist.load_data()
   train_data, train_labels = train
   test_data, test_labels = test
-
+    
   train_data = np.array(train_data, dtype=np.float32)
   test_data = np.array(test_data, dtype=np.float32)
 

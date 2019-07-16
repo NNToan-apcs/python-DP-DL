@@ -10,6 +10,8 @@ from absl import app
 from dpsgd_classifier import train as train_model
 
 from utils import load_trained_indices, get_data_indices, load_mnist
+from model import cnn_model_fn, softmax_model_fn, cifar_100_cnn_model_fn
+
 import argparse
 
 from sklearn.metrics import classification_report, accuracy_score
@@ -73,7 +75,8 @@ def save_data():
     if not os.path.exists(DATA_PATH):
         os.makedirs(DATA_PATH)
     # x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
-    x, y, test_x, test_y = load_mnist()
+    # x, y, test_x, test_y = load_mnist()
+    x, y, test_x, test_y = load_cifar_100()
     if test_x is None:
         print( 'Splitting train/test data with ratio {}/{}'.format(1 - args.test_ratio, args.test_ratio))
         x, test_x, y, test_y = train_test_split(x, y, test_size=args.test_ratio, stratify=y)
@@ -107,100 +110,6 @@ def save_data():
         test_x, test_y = shadow_i_x[target_size:], shadow_i_y[target_size:]
         np.savez(DATA_PATH + 'shadow{}_data.npz'.format(i), train_x, train_y, test_x, test_y)
 
-# MODEL STRUCTURE
-
-def softmax_model_fn(features, labels, mode):
-  """Model function for a Softmax regression."""
-  with tf.device('/gpu:0'):
-    # y = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
-    # logits = tf.keras.layers.Dense(2).apply(y)
-    
-    # y = tf.keras.layers.Dense(64, activation='relu').apply(features['x'])
-    logits = tf.keras.layers.Dense(2, activation='softmax').apply(features['x'])
-
-    # logits = tf.keras.layers.Dense(2, activation='sigmoid').apply(features['x'])
-    # Add prediction metrics (for INFER mode).
-    if mode == tf.estimator.ModeKeys.PREDICT:
-      predicted_classes = tf.argmax(logits, 1)
-      predictions = {
-          'class_ids': predicted_classes[:, tf.newaxis],
-          'probabilities': 100*tf.nn.softmax(logits),
-          # 'logits': logits,
-      }
-      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
-
-    # Add evaluation metrics (for EVAL mode).
-    elif mode == tf.estimator.ModeKeys.EVAL:
-    #   # Calculate loss as a vector (to support microbatches in DP-SGD).
-    #   vector_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-    #       labels=labels, logits=logits)
-      vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=labels, logits=logits)
-      # Define mean of loss across minibatch (for reporting through tf.Estimator).
-      scalar_loss = tf.reduce_mean(vector_loss)
-
-      eval_metric_ops = {
-          'accuracy':
-              tf.metrics.accuracy(
-                  labels=labels,
-                  predictions=tf.argmax(input=logits, axis=1),
-                #   predictions=correct_predictions
-                  )
-          
-      }
-
-      return tf.estimator.EstimatorSpec(mode=mode,
-                                        loss=scalar_loss,
-                                        eval_metric_ops=eval_metric_ops)
-
-def cnn_model_fn(features, labels, mode):
-  """Model function for a CNN."""
-  with tf.device('/gpu:0'):
-    print("----------------------MODE----------------------------------------")
-    print("Mode = ", mode)
-    print("------------------------------------------------------------------")
-    # Define CNN architecture using tf.keras.layers.
-    input_layer = tf.reshape(features['x'], [-1, 28, 28, 1])
-    y = tf.keras.layers.Conv2D(16, 8,
-                                strides=2,
-                                padding='same',
-                                activation='relu').apply(input_layer)
-    y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
-    y = tf.keras.layers.Conv2D(32, 4,
-                                strides=2,
-                                padding='valid',
-                                activation='relu').apply(y)
-    y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
-    y = tf.keras.layers.Flatten().apply(y)
-    y = tf.keras.layers.Dense(32, activation='relu').apply(y)
-    logits = tf.keras.layers.Dense(10).apply(y)
-    # Add prediction metrics (for INFER mode).
-    if mode == tf.estimator.ModeKeys.PREDICT:
-      predicted_classes = tf.argmax(logits, 1)
-      predictions = {
-          'class_ids': predicted_classes[:, tf.newaxis],
-          'probabilities': 100*tf.nn.softmax(logits),
-      }
-      return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
-      
-    # Add evaluation metrics (for EVAL mode).
-    if mode == tf.estimator.ModeKeys.EVAL:
-        # Calculate loss as a vector (to support microbatches in DP-SGD).
-        vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=labels, logits=logits)
-        # Define mean of loss across minibatch (for reporting through tf.Estimator).
-        scalar_loss = tf.reduce_mean(vector_loss)
-        
-        eval_metric_ops = {
-            'accuracy':
-                tf.metrics.accuracy(
-                    labels=labels,
-                    predictions=tf.argmax(input=logits, axis=1))
-        }
-
-        return tf.estimator.EstimatorSpec(mode=mode,
-                                        loss=scalar_loss,
-                                        eval_metric_ops=eval_metric_ops)
 
 # TRAINING FUNCTIONS
 
@@ -209,7 +118,7 @@ def train_target_model(dataset, save=True):
     batchSize=100
     
     modelDir = train_model(dataset, "target", 'nn')
-    target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
+    target_model = tf.estimator.Estimator(model_fn=cifar_100_cnn_model_fn,
                                         model_dir=modelDir)
     # test data for attack model
     attack_x, attack_y = [], []
@@ -252,6 +161,7 @@ def train_target_model(dataset, save=True):
         np.savez(MODEL_PATH + 'attack_test_classes.npz', classes)
         # np.savez(MODEL_PATH + 'target_model.npz', *target_model)
 
+
     return attack_x, attack_y, classes
 
 
@@ -266,7 +176,7 @@ def train_shadow_models(dataset, save=True):
         data = load_data('shadow{}_data.npz'.format(i))
         train_x, train_y, test_x, test_y = data
         modelDir = train_model(dataset, "shadow", 'nn')
-        shadow_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
+        shadow_model = tf.estimator.Estimator(model_fn=cifar_100_cnn_model_fn,
                                         model_dir=modelDir)
         # Predict 
         attack_i_x, attack_i_y = [], []
@@ -344,23 +254,23 @@ def train_attack_model(classes=None, dataset=None):
         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
 
         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
-        # f=open("./c_train_x.txt", "w+")
+        # f=open("./attack_data/c_train_x.txt", "w+")
         # for i in c_train_x:
         #     f.write(str(i)+"\n")
         # f.close()
-        # f=open("./c_train_y.txt", "w+")
+        # f=open("./attack_data/c_train_y.txt", "w+")
         # for i in c_train_y:
         #     f.write(str(i)+"\n")
         # f.close()
-        # f=open("./c_test_x.txt", "w+")
+        # f=open("./attack_data/c_test_x.txt", "w+")
         # for i in c_test_x:
         #     f.write(str(i)+"\n")
         # f.close()
-        # f=open("./c_test_y.txt", "w+")
+        # f=open("./attack_data/c_test_y.txt", "w+")
         # for i in c_test_y:
         #     f.write(str(i)+"\n")
         # f.close()
-        ##################
+        # #################
         # print("A"*20)
 
         # zero = [item for item in c_test_y if item==0]
@@ -381,7 +291,7 @@ def train_attack_model(classes=None, dataset=None):
         # print(len(zero)/len(one))
         # print("A"*20)
         # input()
-        ###################
+        # ##################
 
 
         # arr = []
@@ -457,26 +367,45 @@ def train_attack_model(classes=None, dataset=None):
 
 # MAIN PROGRAMMES
 # TODO
+
+def load_cifar_100():
+  """Loads MNIST and preprocesses to combine training and validation data."""
+  train, test = tf.keras.datasets.cifar100.load_data()
+  train_data, train_labels = train
+  test_data, test_labels = test
+
+  train_data = np.array(train_data, dtype=np.float32)
+  test_data = np.array(test_data, dtype=np.float32)
+
+  train_labels = np.array(train_labels, dtype=np.int32)
+  test_labels = np.array(test_labels, dtype=np.int32)
+  print(train_data.shape)
+  print(test_data.shape)
+  print(train_labels.shape)
+  print(test_labels.shape)
+#   input()
+  return train_data, train_labels, test_data, test_labels
 def attack_experiment(unused_argv):
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     # dataset = load_data('target_data.npz')
     # dataset = load_mnist()
-    # print('-'*10 + "A"*10 + '-'*10)
-    # print("TRAINING TARGET MODEL")
-    # print('-'*10 + "A"*10 + '-'*10)
-    # attack_test_x, attack_test_y, test_classes = train_target_model(dataset)
-    # print('-'*10 + "B"*10 + '-'*10)
-    # print("TRAINING SHADOW MODELS")
-    # print('-'*10 + "B"*10 + '-'*10)
-    # attack_train_x, attack_train_y, train_classes = train_shadow_models(dataset)
-    # print('-'*10 + "C"*10 + '-'*10)
-    # print("TRAINING ATTACK MODEL")
-    # print('-'*10 + "C"*10 + '-'*10)
-    # dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
-    # classes = (train_classes, test_classes)
-    # train_attack_model(classes , dataset)
-    # input()
-    train_attack_model()
+    dataset = load_cifar_100()
+    print('-'*10 + "A"*10 + '-'*10)
+    print("TRAINING TARGET MODEL")
+    print('-'*10 + "A"*10 + '-'*10)
+    attack_test_x, attack_test_y, test_classes = train_target_model(dataset)
+    print('-'*10 + "B"*10 + '-'*10)
+    print("TRAINING SHADOW MODELS")
+    print('-'*10 + "B"*10 + '-'*10)
+    attack_train_x, attack_train_y, train_classes = train_shadow_models(dataset)
+    print('-'*10 + "C"*10 + '-'*10)
+    print("TRAINING ATTACK MODEL")
+    print('-'*10 + "C"*10 + '-'*10)
+    dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
+    classes = (train_classes, test_classes)
+    train_attack_model(classes , dataset)
+    input()
+    # train_attack_model()
 def main(unused_argv):
     dataset = load_mnist()
     # TODO: LOAD model from estimators
@@ -510,6 +439,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_ratio', type=float, default=0.3)
     # target and shadow model configuration
     parser.add_argument('--n_shadow', type=int, default=10)
+    parser.add_argument('--dataset', type=str, default="mnist")
     parser.add_argument('--target_data_size', type=int, default=int(1e4))   # number of data point used in target model
     parser.add_argument('--target_model', type=str, default='nn')
     parser.add_argument('--target_learning_rate', type=float, default=0.01)
