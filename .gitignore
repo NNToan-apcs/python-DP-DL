@@ -12,5 +12,17 @@ privacy/tutorials/attack_data
 privacy/tutorials/train_feat_file.txt
 privacy/tutorials/train_label_file.txt
 privacy/_pycache_/
+
 DeepLearningZeroToAll/
+
 mlLeaks simp code/
+
+ML-Privacy-Regulization/datasets
+ML-Privacy-Regulization/utils
+
+tf-estimator-tutorials/
+
+adversarial_example/FGSM/datasets
+adversarial_example/FGSM/misc
+adversarial_example/FGSM/models
+adversarial_example/FGSM/utils
