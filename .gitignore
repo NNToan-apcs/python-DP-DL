@@ -8,5 +8,9 @@ privacy/tutorials/model
 privacy/tutorials/data
 privacy/tutorials/record_data
 privacy/tutorials/evaluate
+privacy/tutorials/attack_data
+privacy/tutorials/train_feat_file.txt
+privacy/tutorials/train_label_file.txt
 privacy/_pycache_/
 DeepLearningZeroToAll/
+mlLeaks simp code/

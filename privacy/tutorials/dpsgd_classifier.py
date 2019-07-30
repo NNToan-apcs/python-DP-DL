@@ -30,7 +30,7 @@ from privacy.analysis import privacy_ledger
 from privacy.analysis.rdp_accountant import compute_rdp_from_ledger
 from privacy.analysis.rdp_accountant import get_privacy_spent
 from privacy.optimizers import dp_optimizer
-from model import cnn_model_fn, softmax_model_fn, cifar_100_cnn_model_fn
+from model import cnn_model_fn, softmax_model_fn, cifar_10_cnn_model_fn
 from utils import load_mnist
 
 
@@ -81,13 +81,13 @@ def train(dataset, model_name, mode='nn'):
     # modelParentDir =  "/home/ttson/Desktop/toan_workspace/toan-env/DL_models/" # Ubuntu I63
 
     if str.find(model_name, "attack") != -1 : # softmax mode
-      modelName = "mnist_"+ model_name + "_softmax_" + str(FLAGS.soft_max_epochs)
+      modelName = FLAGS.dataset + "_"+ model_name + "_softmax_" + str(FLAGS.soft_max_epochs)
       epochs = FLAGS.soft_max_epochs
     elif FLAGS.dpsgd: # dpsgd mode
-      modelName = "mnist_"+ model_name + "_dpsgd_" + str(FLAGS.epochs)  
+      modelName = FLAGS.dataset + "_"+ model_name + "_dpsgd_" + str(FLAGS.epochs)  
       epochs = FLAGS.epochs
     else: # sgd mode
-      modelName = "mnist_"+ model_name + "_sgd_" + str(FLAGS.epochs)
+      modelName = FLAGS.dataset + "_"+ model_name + "_sgd_" + str(FLAGS.epochs)
       epochs = FLAGS.epochs
     FLAGS.model_dir = modelParentDir + modelName
     record_file = modelName
@@ -110,7 +110,7 @@ def train(dataset, model_name, mode='nn'):
       print('TRAINING USING NEURON NETWORK')
       mnist_classifier = tf.estimator.Estimator(
                                                 # model_fn=cnn_model_fn,
-                                                model_fn=cifar_100_cnn_model_fn,
+                                                model_fn=cnn_model_fn,
                                                 model_dir=FLAGS.model_dir)
     elif mode == 'softmax':
       print("TRAINING USING SOFTMAX")

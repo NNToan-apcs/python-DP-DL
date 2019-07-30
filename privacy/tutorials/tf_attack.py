@@ -6,15 +6,21 @@ import sys
 import os
 # from PIL import Image
 from absl import app
+from sklearn.model_selection import train_test_split
 
 from dpsgd_classifier import train as train_model
-
-from utils import load_trained_indices, get_data_indices, load_mnist
-from model import cnn_model_fn, softmax_model_fn, cifar_100_cnn_model_fn
+from utils import load_trained_indices, get_data_indices, load_mnist, load_dataset
+from model import cnn_model_fn, softmax_model_fn, cifar_10_cnn_model_fn
 
 import argparse
 
+from absl import flags
 from sklearn.metrics import classification_report, accuracy_score
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('dataset', 'mnist' , 'dataset name')
+
 MODEL_PATH = './model/'
 DATA_PATH = './data/'
 if not os.path.exists(MODEL_PATH):
@@ -74,9 +80,16 @@ def save_data():
 
     if not os.path.exists(DATA_PATH):
         os.makedirs(DATA_PATH)
-    # x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
-    # x, y, test_x, test_y = load_mnist()
-    x, y, test_x, test_y = load_cifar_100()
+    
+    # Choosing dataset
+    if "local" in args.dataset:
+        x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
+    elif "mnist" in args.dataset:
+        x, y, test_x, test_y = load_mnist()
+    elif "cifar10" in args.dataset:
+        x, y, test_x, test_y = load_cifar_10()
+    
+    # x, y, test_x, test_y = load_cifar_10()
     if test_x is None:
         print( 'Splitting train/test data with ratio {}/{}'.format(1 - args.test_ratio, args.test_ratio))
         x, test_x, y, test_y = train_test_split(x, y, test_size=args.test_ratio, stratify=y)
@@ -118,7 +131,7 @@ def train_target_model(dataset, save=True):
     batchSize=100
     
     modelDir = train_model(dataset, "target", 'nn')
-    target_model = tf.estimator.Estimator(model_fn=cifar_100_cnn_model_fn,
+    target_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                         model_dir=modelDir)
     # test data for attack model
     attack_x, attack_y = [], []
@@ -176,7 +189,7 @@ def train_shadow_models(dataset, save=True):
         data = load_data('shadow{}_data.npz'.format(i))
         train_x, train_y, test_x, test_y = data
         modelDir = train_model(dataset, "shadow", 'nn')
-        shadow_model = tf.estimator.Estimator(model_fn=cifar_100_cnn_model_fn,
+        shadow_model = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                         model_dir=modelDir)
         # Predict 
         attack_i_x, attack_i_y = [], []
@@ -254,23 +267,23 @@ def train_attack_model(classes=None, dataset=None):
         c_test_x, c_test_y = test_x[c_test_indices], test_y[c_test_indices]
 
         c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
-        # f=open("./attack_data/c_train_x.txt", "w+")
-        # for i in c_train_x:
-        #     f.write(str(i)+"\n")
-        # f.close()
-        # f=open("./attack_data/c_train_y.txt", "w+")
-        # for i in c_train_y:
-        #     f.write(str(i)+"\n")
-        # f.close()
-        # f=open("./attack_data/c_test_x.txt", "w+")
-        # for i in c_test_x:
-        #     f.write(str(i)+"\n")
-        # f.close()
-        # f=open("./attack_data/c_test_y.txt", "w+")
-        # for i in c_test_y:
-        #     f.write(str(i)+"\n")
-        # f.close()
-        # #################
+        f=open("./attack_data/c_train_x_"+ str(c) + ".txt", "w+")
+        for idx in range(len(c_train_x)):
+            f.write(str(idx) + " - " +str(c_train_x[idx])+"\n")
+        f.close()
+        f=open("./attack_data/c_train_y"+ str(c) + ".txt", "w+")
+        for idx in range(len(c_train_y)):
+            f.write(str(idx) + " - " +str(c_train_y[idx])+"\n")
+        f.close()
+        f=open("./attack_data/c_test_x"+ str(c) + ".txt", "w+")
+        for idx in range(len(c_test_x)):
+            f.write(str(idx) + " - " +str(c_test_x[idx])+"\n")
+        f.close()
+        f=open("./attack_data/c_test_y"+ str(c) + ".txt", "w+")
+        for idx in range(len(c_test_y)):
+            f.write(str(idx) + " - " +str(c_test_y[idx])+"\n")
+        f.close()
+        #################
         # print("A"*20)
 
         # zero = [item for item in c_test_y if item==0]
@@ -368,9 +381,9 @@ def train_attack_model(classes=None, dataset=None):
 # MAIN PROGRAMMES
 # TODO
 
-def load_cifar_100():
+def load_cifar_10():
   """Loads MNIST and preprocesses to combine training and validation data."""
-  train, test = tf.keras.datasets.cifar100.load_data()
+  train, test = tf.keras.datasets.cifar10.load_data()
   train_data, train_labels = train
   test_data, test_labels = test
 
@@ -383,13 +396,15 @@ def load_cifar_100():
   print(test_data.shape)
   print(train_labels.shape)
   print(test_labels.shape)
+  print(train_data[0])
+  print(train_labels[0])
 #   input()
   return train_data, train_labels, test_data, test_labels
 def attack_experiment(unused_argv):
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
-    # dataset = load_data('target_data.npz')
+    dataset = load_data('target_data.npz')
     # dataset = load_mnist()
-    dataset = load_cifar_100()
+    # dataset = load_cifar_10()
     print('-'*10 + "A"*10 + '-'*10)
     print("TRAINING TARGET MODEL")
     print('-'*10 + "A"*10 + '-'*10)
@@ -404,29 +419,14 @@ def attack_experiment(unused_argv):
     dataset = (attack_train_x, attack_train_y, attack_test_x, attack_test_y)
     classes = (train_classes, test_classes)
     train_attack_model(classes , dataset)
-    input()
+    # input()
     # train_attack_model()
-def main(unused_argv):
-    dataset = load_mnist()
-    # TODO: LOAD model from estimators
-    model = train_model(dataset, "aaa", 'nn')
-    train_data, train_labels, test_data, test_labels = dataset
 
-    # Create tf.Estimator input functions for the training and test data.
-    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'x': test_data},
-        y=test_labels,
-        num_epochs=1,
-        shuffle=False)
-    eval_results = model.evaluate(input_fn=eval_input_fn)
-    print("---------------------------------------------------------")
-    print("Current model's accuracy:", 100*eval_results['accuracy'] )
-    print("---------------------------------------------------------")
+# def main(unused_argv):
+    
+    
+        
 
-    # attack_x, attack_y = [], []
-    
-    print('*'*10 + "Output" + '*'*10 )
-    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('train_feat', type=str)
@@ -438,7 +438,7 @@ if __name__ == '__main__':
     # if test not give, train test split configuration
     parser.add_argument('--test_ratio', type=float, default=0.3)
     # target and shadow model configuration
-    parser.add_argument('--n_shadow', type=int, default=10)
+    parser.add_argument('--n_shadow', type=int, default=1)
     parser.add_argument('--dataset', type=str, default="mnist")
     parser.add_argument('--target_data_size', type=int, default=int(1e4))   # number of data point used in target model
     parser.add_argument('--target_model', type=str, default='nn')
@@ -458,10 +458,12 @@ if __name__ == '__main__':
 
     # parse configuration
     args = parser.parse_args()
-    print( vars(args))
     if args.save_data:
+
         save_data() # Check dataset which is used by this function before running!!!
     else:
+        FLAGS.dataset = args.dataset
         app.run(attack_experiment)
         # app.run(main)
+    
     

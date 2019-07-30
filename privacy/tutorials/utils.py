@@ -4,6 +4,22 @@ import os
 import tensorflow as tf  
 import numpy as np
 
+
+def load_dataset(train_feat, train_label, test_feat=None, test_label=None):
+    train_x = np.genfromtxt(train_feat, delimiter=',', dtype='float32')
+    train_y = np.genfromtxt(train_label, dtype='int32')
+    min_y = np.min(train_y)
+    train_y -= min_y
+    if test_feat is not None and test_label is not None:
+        test_x = np.genfromtxt(train_feat, delimiter=',', dtype='float32')
+        test_y = np.genfromtxt(train_label, dtype='int32')
+        test_y -= min_y
+    else:
+        test_x = None
+        test_y = None
+    return train_x, train_y, test_x, test_y
+
+
 def load_trained_indices():
     fname = MODEL_PATH + 'data_indices.npz'
     with np.load(fname) as f:
