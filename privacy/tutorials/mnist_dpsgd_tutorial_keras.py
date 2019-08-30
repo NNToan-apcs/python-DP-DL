@@ -27,8 +27,7 @@ import tensorflow as tf
 
 from privacy.analysis.rdp_accountant import compute_rdp
 from privacy.analysis.rdp_accountant import get_privacy_spent
-from privacy.dp_query.gaussian_query import GaussianAverageQuery
-from privacy.optimizers.dp_optimizer import DPGradientDescentOptimizer
+from privacy.optimizers.dp_optimizer import DPGradientDescentGaussianOptimizer
 
 if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
   GradientDescentOptimizer = tf.train.GradientDescentOptimizer
@@ -36,14 +35,14 @@ else:
   GradientDescentOptimizer = tf.optimizers.SGD  # pylint: disable=invalid-name
 
 flags.DEFINE_boolean(
-    'dpsgd', False, 'If True, train with DP-SGD. If False, '
+    'dpsgd', True, 'If True, train with DP-SGD. If False, '
     'train with vanilla SGD.')
 flags.DEFINE_float('learning_rate', 0.15, 'Learning rate for training')
 flags.DEFINE_float('noise_multiplier', 1.1,
                    'Ratio of the standard deviation to the clipping norm')
 flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 250, 'Batch size')
-flags.DEFINE_integer('epochs', 10, 'Number of epochs')
+flags.DEFINE_integer('epochs', 60, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 250, 'Number of microbatches '
     '(must evenly divide batch_size)')
@@ -119,15 +118,11 @@ def main(unused_argv):
   ])
 
   if FLAGS.dpsgd:
-    dp_average_query = GaussianAverageQuery(
-        FLAGS.l2_norm_clip,
-        FLAGS.l2_norm_clip * FLAGS.noise_multiplier,
-        FLAGS.microbatches)
-    optimizer = DPGradientDescentOptimizer(
-        dp_average_query,
-        FLAGS.microbatches,
-        learning_rate=FLAGS.learning_rate,
-        unroll_microbatches=True)
+    optimizer = DPGradientDescentGaussianOptimizer(
+        l2_norm_clip=FLAGS.l2_norm_clip,
+        noise_multiplier=FLAGS.noise_multiplier,
+        num_microbatches=FLAGS.microbatches,
+        learning_rate=FLAGS.learning_rate)
     # Compute vector of per-example loss rather than its mean over a minibatch.
     loss = tf.keras.losses.CategoricalCrossentropy(
         from_logits=True, reduction=tf.losses.Reduction.NONE)
@@ -143,18 +138,12 @@ def main(unused_argv):
             epochs=FLAGS.epochs,
             validation_data=(test_data, test_labels),
             batch_size=FLAGS.batch_size)
-  print(test_data.size)
-  print(test_labels.size)
+
   # Compute the privacy budget expended.
   if FLAGS.dpsgd:
     eps = compute_epsilon(FLAGS.epochs * 60000 // FLAGS.batch_size)
     print('For delta=1e-5, the current epsilon is: %.2f' % eps)
-    # save model to file
-    # print("Saving model")
-    # model.save('mnist_dpsgh_60epoch.h')
   else:
-    # print("Saving model")
-    # model.save('mnist_sgd_60epoch.h')
     print('Trained with vanilla non-private SGD optimizer')
 
 if __name__ == '__main__':

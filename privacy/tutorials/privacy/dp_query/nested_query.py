@@ -62,6 +62,9 @@ class NestedQuery(dp_query.DPQuery):
     return nest.map_structure_up_to(
         self._queries, caller, self._queries, *inputs)
 
+  def set_ledger(self, ledger):
+    self._map_to_queries('set_ledger', ledger=ledger)
+
   def initial_global_state(self):
     """See base class."""
     return self._map_to_queries('initial_global_state')
@@ -70,9 +73,9 @@ class NestedQuery(dp_query.DPQuery):
     """See base class."""
     return self._map_to_queries('derive_sample_params', global_state)
 
-  def initial_sample_state(self, global_state, template):
+  def initial_sample_state(self, template):
     """See base class."""
-    return self._map_to_queries('initial_sample_state', global_state, template)
+    return self._map_to_queries('initial_sample_state', template)
 
   def preprocess_record(self, params, record):
     """See base class."""

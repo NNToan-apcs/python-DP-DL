@@ -41,7 +41,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('record_dir', "./record_data" , 'Model records dir')
 # modeldir =  "/home/toan/Desktop/DL_models/" # UBUNTU
 
-flags.DEFINE_string('model_dir', "D:/DL_models/mnist_sgd_5", 'Model directory')
+flags.DEFINE_string('model_dir', "../DL_models/mnist_sgd_5", 'Model directory')
 flags.DEFINE_string('record_file', "mnist_sgd_5.txt" , 'Model records file')
 
 class EpsilonPrintingTrainingHook(tf.estimator.SessionRunHook):
@@ -77,7 +77,7 @@ def train(dataset, model_name, mode='nn'):
       raise ValueError('Number of microbatches should divide evenly batch_size')
 
     # modelDir config
-    modelParentDir =  "D:/DL_models/" # Window
+    modelParentDir =  "../DL_models/" # Window
     # modelParentDir =  "/home/ttson/Desktop/toan_workspace/toan-env/DL_models/" # Ubuntu I63
 
     if str.find(model_name, "attack") != -1 : # softmax mode
@@ -108,10 +108,13 @@ def train(dataset, model_name, mode='nn'):
     
     if mode == 'nn':
       print('TRAINING USING NEURON NETWORK')
-      mnist_classifier = tf.estimator.Estimator(
-                                                # model_fn=cnn_model_fn,
-                                                model_fn=cnn_model_fn,
-                                                model_dir=FLAGS.model_dir)
+      if(FLAGS.dataset == "cifar10"):
+        mnist_classifier = tf.estimator.Estimator(model_fn=cifar_10_cnn_model_fn,
+                                                  model_dir=FLAGS.model_dir)
+      else:
+        mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
+                                                  model_dir=FLAGS.model_dir)
+      
     elif mode == 'softmax':
       print("TRAINING USING SOFTMAX")
       mnist_classifier = tf.estimator.Estimator(model_fn=softmax_model_fn,
@@ -216,7 +219,7 @@ def main(unused_argv):
   if FLAGS.dpsgd and FLAGS.batch_size % FLAGS.microbatches != 0:
     raise ValueError('Number of microbatches should divide evenly batch_size')
   FLAGS.epochs = 35
-  FLAGS.model_dir = "D:/DL_models/mnist_sgd_35"
+  FLAGS.model_dir = "../DL_models/mnist_sgd_35"
   FLAGS.record_file = "mnist_sgd_35.txt"
   # Load training and test data.
   train_data, train_labels, test_data, test_labels = load_mnist()

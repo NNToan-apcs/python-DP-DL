@@ -14,7 +14,7 @@
 # ==============================================================================
 """RDP analysis of the Sampled Gaussian Mechanism.
 
-Functionality for computing  (RDP) of an additive
+Functionality for computing Renyi differential privacy (RDP) of an additive
 Sampled Gaussian Mechanism (SGM). Its public interface consists of two methods:
   compute_rdp(q, noise_multiplier, T, orders) computes RDP for SGM iterated
                                    T times.
@@ -307,7 +307,7 @@ def compute_rdp_from_ledger(ledger, orders):
   Returns:
     RDP at all orders, can be np.inf.
   """
-  total_rdp = 0
+  total_rdp = np.zeros_like(orders, dtype=float)
   for sample in ledger:
     # Compute equivalent z from l2_clip_bounds and noise stddevs in sample.
     # See https://arxiv.org/pdf/1812.06210.pdf for derivation of this formula.

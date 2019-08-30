@@ -47,14 +47,40 @@ def load_mnist():
   train_data = np.array(train_data, dtype=np.float32) / 255
   test_data = np.array(test_data, dtype=np.float32) / 255
 
+  train_data = train_data.reshape(train_data.shape[0], 28, 28, 1)
+  test_data = test_data.reshape(test_data.shape[0], 28, 28, 1)
+
   train_labels = np.array(train_labels, dtype=np.int32)
   test_labels = np.array(test_labels, dtype=np.int32)
+
+  train_labels = tf.keras.utils.to_categorical(train_labels, num_classes=10)
+  test_labels = tf.keras.utils.to_categorical(test_labels, num_classes=10)
 
   assert train_data.min() == 0.
   assert train_data.max() == 1.
   assert test_data.min() == 0.
   assert test_data.max() == 1.
-  assert train_labels.ndim == 1
-  assert test_labels.ndim == 1
 
+  return train_data, train_labels, test_data, test_labels
+
+
+def load_cifar10():
+  """Loads MNIST and preprocesses to combine training and validation data."""
+  train, test = tf.keras.datasets.cifar10.load_data()
+  train_data, train_labels = train
+  test_data, test_labels = test
+
+#   train_data = np.array(train_data, dtype=np.float32)
+#   test_data = np.array(test_data, dtype=np.float32)
+
+#   train_labels = np.array(train_labels, dtype=np.int32)
+#   test_labels = np.array(test_labels, dtype=np.int32)
+
+  num_classes = 10
+  train_labels = tf.keras.utils.to_categorical(train_labels, num_classes)
+  test_labels = tf.keras.utils.to_categorical(test_labels, num_classes)
+  train_data = train_data.astype('float32')
+  test_data = test_data.astype('float32')
+  train_data  /= 255
+  test_data /= 255
   return train_data, train_labels, test_data, test_labels

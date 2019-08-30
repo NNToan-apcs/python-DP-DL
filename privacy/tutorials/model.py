@@ -25,7 +25,7 @@ flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 256, 'Batch size')
 flags.DEFINE_float('delta', 1e-5, 'target delta')
 
-flags.DEFINE_integer('epochs', 200, 'Number of epochs')
+flags.DEFINE_integer('epochs', 50, 'Number of epochs')
 flags.DEFINE_integer('soft_max_epochs', 20, 'Number of epochs')
 
 # flags.DEFINE_integer('epochs', 15, 'Number of epochs')
@@ -36,61 +36,75 @@ flags.DEFINE_integer(
 def cifar_10_cnn_model_fn(features, labels, mode):
     with tf.device('/gpu:0'):
 
-            # 1st Convolutional Layer
-      conv1 = tf.layers.conv2d(
-          inputs=images, filters=64, kernel_size=[5, 5], padding='same',
-          activation=tf.nn.relu, name='conv1')
-      pool1 = tf.layers.max_pooling2d(
-          inputs=conv1, pool_size=[3, 3], strides=2, name='pool1')
-      norm1 = tf.nn.lrn(
-          pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
+      #       # 1st Convolutional Layer
+      # conv1 = tf.layers.conv2d(
+      #     inputs=images, filters=64, kernel_size=[5, 5], padding='same',
+      #     activation=tf.nn.relu, name='conv1')
+      # pool1 = tf.layers.max_pooling2d(
+      #     inputs=conv1, pool_size=[3, 3], strides=2, name='pool1')
+      # norm1 = tf.nn.lrn(
+      #     pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
 
-      # 2nd Convolutional Layer
-      conv2 = tf.layers.conv2d(
-          inputs=norm1, filters=64, kernel_size=[5, 5], padding='same',
-          activation=tf.nn.relu, name='conv2')
-      norm2 = tf.nn.lrn(
-          conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm2')
-      pool2 = tf.layers.max_pooling2d(
-          inputs=norm2, pool_size=[3, 3], strides=2, name='pool2')
+      # # 2nd Convolutional Layer
+      # conv2 = tf.layers.conv2d(
+      #     inputs=norm1, filters=64, kernel_size=[5, 5], padding='same',
+      #     activation=tf.nn.relu, name='conv2')
+      # norm2 = tf.nn.lrn(
+      #     conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm2')
+      # pool2 = tf.layers.max_pooling2d(
+      #     inputs=norm2, pool_size=[3, 3], strides=2, name='pool2')
 
-      # Flatten Layer
-      shape = pool2.get_shape()
-      pool2_ = tf.reshape(pool2, [-1, shape[1]*shape[2]*shape[3]])
+      # # Flatten Layer
+      # shape = pool2.get_shape()
+      # pool2_ = tf.reshape(pool2, [-1, shape[1]*shape[2]*shape[3]])
 
-      # 1st Fully Connected Layer
-      dense1 = tf.layers.dense(
-          inputs=pool2_, units=384, activation=tf.nn.relu, name='dense1')
+      # # 1st Fully Connected Layer
+      # dense1 = tf.layers.dense(
+      #     inputs=pool2_, units=384, activation=tf.nn.relu, name='dense1')
 
-      # 2nd Fully Connected Layer
-      dense2 = tf.layers.dense(
-          inputs=dense1, units=192, activation=tf.nn.relu, name='dense2')
+      # # 2nd Fully Connected Layer
+      # dense2 = tf.layers.dense(
+      #     inputs=dense1, units=192, activation=tf.nn.relu, name='dense2')
 
-      # 3rd Fully Connected Layer (Logits)
-      logits = tf.layers.dense(
-          inputs=dense2, units=NUM_CLASSES, activation=tf.nn.relu, name='logits')
-
+      # # 3rd Fully Connected Layer (Logits)
+      # logits = tf.layers.dense(
+      #     inputs=dense2, units=NUM_CLASSES, activation=tf.nn.relu, name='logits')
+  
       # 32 output- Conv2d
+      # input(features['x'][1:])
+      # input_layer = tf.reshape(features['x'],[])
+      input_layer = features['x']
+      input(input_layer.shape)
       y = tf.keras.layers.Conv2D(32, (3,3),
                                 padding='same',
-                                activation='relu').apply(features['x'])
+                                activation='relu').apply(input_layer)
+      input(y.shape)
       y = tf.keras.layers.Conv2D(32, (3,3),
                                 activation='relu').apply(y)
-      y = tf.keras.layers.MaxPool2D(2, (2,2)).apply(y)
+      input(y.shape)
+      y = tf.keras.layers.MaxPool2D(pool_size=(2, 2)).apply(y)
+      input(y.shape)
       # 64 output
       y = tf.keras.layers.Conv2D(64, (3,3),
                                 padding='same',
                                 activation='relu').apply(features['x'])
+      input(y.shape)                                
       y = tf.keras.layers.Conv2D(64, (3,3),
                                 activation='relu').apply(y)
-      y = tf.keras.layers.MaxPool2D(2, (2,2)).apply(y)
-      
+      input(y.shape)
+      y = tf.keras.layers.MaxPool2D(pool_size=(2, 2)).apply(y)
+      input(y.shape)
       # Flatten
       y = tf.keras.layers.Flatten().apply(y)
+      input(y.shape)
       # 512 relu output
+      
       y = tf.keras.layers.Dense(512, activation='relu').apply(y)
+      input(y.shape)
+      y = tf.keras.layers.Dense(32, activation='relu').apply(y)
+      input(y.shape)
       # softmax
-      logits = tf.keras.layers.Dense(10, activation='softmax').apply(y)
+      logits = tf.keras.layers.Dense(10).apply(y)
       if mode == tf.estimator.ModeKeys.PREDICT:
         predicted_classes = tf.argmax(logits, 1)
         predictions = {
@@ -101,15 +115,17 @@ def cifar_10_cnn_model_fn(features, labels, mode):
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
       # Calculate loss as a vector (to support microbatches in DP-SGD).
       
+      print(labels.shape)
+      input(logits.shape)
+      
+      input("DEBUG")
       # vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
       #     labels=tf.argmax(tf.cast(labels, dtype=tf.int32),1), logits=logits)
-      # vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-      #     labels=labels, logits=logits)
-      print(labels.shape)
+      vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+          labels=labels, logits=logits)
+      # vector_loss = tf.nn.softmax_cross_entropy_with_logits(
+      #     labels=tf.argmax(labels,1), logits=logits)
       
-      input(tf.argmax(labels,1))
-      vector_loss = tf.nn.softmax_cross_entropy_with_logits(
-          labels=tf.argmax(labels,1), logits=logits)
       # Define mean of loss across minibatch (for reporting through tf.Estimator).
       scalar_loss = tf.reduce_mean(vector_loss)
 
@@ -171,18 +187,25 @@ def cnn_model_fn(features, labels, mode):
     input_layer = tf.reshape(features['x'], [-1, 28, 28, 1])
     # input(features['x'].shape)
     # input(input_layer)
+    input(input_layer.shape)
     y = tf.keras.layers.Conv2D(16, 8,
                               strides=2,
                               padding='same',
                               activation='relu').apply(input_layer)
+    input(y.shape)
     y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
+    input(y.shape)
     y = tf.keras.layers.Conv2D(32, 4,
                               strides=2,
                               padding='valid',
                               activation='relu').apply(y)
+    input(y.shape)
     y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
+    input(y.shape)
     y = tf.keras.layers.Flatten().apply(y)
+    input(y.shape)
     y = tf.keras.layers.Dense(32, activation='relu').apply(y)
+    input(y.shape)
     logits = tf.keras.layers.Dense(10).apply(y)
     if mode == tf.estimator.ModeKeys.PREDICT:
       predicted_classes = tf.argmax(logits, 1)
@@ -194,6 +217,9 @@ def cnn_model_fn(features, labels, mode):
       return tf.estimator.EstimatorSpec(mode, predictions=predictions)
     # Calculate loss as a vector (to support microbatches in DP-SGD).
     
+    print(labels.shape)
+    input(logits.shape)
+      
     vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits)
     # Define mean of loss across minibatch (for reporting through tf.Estimator).

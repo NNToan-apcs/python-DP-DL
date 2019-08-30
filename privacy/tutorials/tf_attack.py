@@ -83,11 +83,15 @@ def save_data():
     
     # Choosing dataset
     if "local" in args.dataset:
+        print("USING LOCAL DATASET")
         x, y, test_x, test_y = load_dataset(args.train_feat, args.train_label, args.test_feat, args.train_label)
     elif "mnist" in args.dataset:
+        print("USING MNIST DATASET")
         x, y, test_x, test_y = load_mnist()
     elif "cifar10" in args.dataset:
+        print("USING CIFAR10 DATASET")
         x, y, test_x, test_y = load_cifar_10()
+
     
     # x, y, test_x, test_y = load_cifar_10()
     if test_x is None:
@@ -387,6 +391,9 @@ def load_cifar_10():
   train_data, train_labels = train
   test_data, test_labels = test
 
+#   input(len(train_data))
+#   train_data = train_data.shape[1:]
+#   input(len(train_data))
   train_data = np.array(train_data, dtype=np.float32)
   test_data = np.array(test_data, dtype=np.float32)
 
@@ -396,9 +403,8 @@ def load_cifar_10():
   print(test_data.shape)
   print(train_labels.shape)
   print(test_labels.shape)
-  print(train_data[0])
-  print(train_labels[0])
-#   input()
+  
+  
   return train_data, train_labels, test_data, test_labels
 def attack_experiment(unused_argv):
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
@@ -438,7 +444,7 @@ if __name__ == '__main__':
     # if test not give, train test split configuration
     parser.add_argument('--test_ratio', type=float, default=0.3)
     # target and shadow model configuration
-    parser.add_argument('--n_shadow', type=int, default=1)
+    parser.add_argument('--n_shadow', type=int, default=10)
     parser.add_argument('--dataset', type=str, default="mnist")
     parser.add_argument('--target_data_size', type=int, default=int(1e4))   # number of data point used in target model
     parser.add_argument('--target_model', type=str, default='nn')

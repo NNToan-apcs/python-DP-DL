@@ -94,9 +94,7 @@ def rnn_model_fn(features, labels, mode):  # pylint: disable=unused-argument
 
       ledger = privacy_ledger.PrivacyLedger(
           population_size=NB_TRAIN,
-          selection_probability=(FLAGS.batch_size / NB_TRAIN),
-          max_samples=1e6,
-          max_queries=1e6)
+          selection_probability=(FLAGS.batch_size / NB_TRAIN))
 
       optimizer = dp_optimizer.DPAdamGaussianOptimizer(
           l2_norm_clip=FLAGS.l2_norm_clip,
@@ -136,7 +134,8 @@ def load_data():
           'using a substitute dataset from the tensorflow_datasets module.')
     train_dataset = tfds.load(name='lm1b/subwords8k',
                               split=tfds.Split.TRAIN,
-                              batch_size=NB_TRAIN)
+                              batch_size=NB_TRAIN,
+                              shuffle_files=True)
     test_dataset = tfds.load(name='lm1b/subwords8k',
                              split=tfds.Split.TEST,
                              batch_size=10000)
