@@ -308,6 +308,7 @@ def train_model(dataset, n_hidden=50, batch_size=100, epochs=100, learning_rate=
         print('Training...')
     counter = 1
     for epoch in range(epochs):
+        print(epoch)
         loss = 0
         for input_batch, target_batch in iterate_minibatches(train_x, train_y, batch_size):
             #input_batch = (np.reshape(input_batch,(len(input_batch),3,32,32)))
@@ -355,7 +356,7 @@ def train_model(dataset, n_hidden=50, batch_size=100, epochs=100, learning_rate=
         accuracy= round(accuracy_score(test_y, pred_y),5)
         print("precision",pres)
         print("recall",recall)
-        input("accuracy",accuracy)
+        print("accuracy",accuracy)
         return pres,recall, accuracy
         # return classification_report(test_y, pred_y) #precision_recall_fscore_support(test_y, pred_y,average=None)
         

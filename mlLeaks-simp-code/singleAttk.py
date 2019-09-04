@@ -3,7 +3,8 @@ Created on 5 Dec 2018
 
 @author: Wentao Liu, Ahmed.Salem
 '''
-
+# import os
+# os.environ['THEANO_FLAGS'] = 'optimizer=None'
 import sys
 sys.dont_write_bytecode = True
 
@@ -14,11 +15,11 @@ from sklearn.model_selection import train_test_split
 import random
 import lasagne
 
-import tensorflow as tf
+# import tensorflow as tf
 
 import deeplearning as dp
 import classifier
-import tensorflow as tf
+# import tensorflow as tf
 def clipDataTopTest(dataToClip, top=3):
 	res = [ sorted(s, reverse=True)[0:top] for s in dataToClip ]
 

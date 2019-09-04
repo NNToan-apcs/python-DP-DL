@@ -22,11 +22,11 @@ flags.DEFINE_float('learning_rate', .15, 'Learning rate for training')
 flags.DEFINE_float('noise_multiplier', 1.1,
                    'Ratio of the standard deviation to the clipping norm')
 flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
-flags.DEFINE_integer('batch_size', 256, 'Batch size')
+flags.DEFINE_integer('batch_size', 250, 'Batch size')
 flags.DEFINE_float('delta', 1e-5, 'target delta')
 
-flags.DEFINE_integer('epochs', 50, 'Number of epochs')
-flags.DEFINE_integer('soft_max_epochs', 20, 'Number of epochs')
+flags.DEFINE_integer('epochs', 1, 'Number of epochs')
+flags.DEFINE_integer('soft_max_epochs', 1, 'Number of epochs')
 
 # flags.DEFINE_integer('epochs', 15, 'Number of epochs')
 flags.DEFINE_integer(
@@ -187,25 +187,25 @@ def cnn_model_fn(features, labels, mode):
     input_layer = tf.reshape(features['x'], [-1, 28, 28, 1])
     # input(features['x'].shape)
     # input(input_layer)
-    input(input_layer.shape)
+    # input(input_layer.shape)
     y = tf.keras.layers.Conv2D(16, 8,
                               strides=2,
                               padding='same',
                               activation='relu').apply(input_layer)
-    input(y.shape)
+    # input(y.shape)
     y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
-    input(y.shape)
+    # input(y.shape)
     y = tf.keras.layers.Conv2D(32, 4,
                               strides=2,
                               padding='valid',
                               activation='relu').apply(y)
-    input(y.shape)
+    # input(y.shape)
     y = tf.keras.layers.MaxPool2D(2, 1).apply(y)
-    input(y.shape)
+    # input(y.shape)
     y = tf.keras.layers.Flatten().apply(y)
-    input(y.shape)
+    # input(y.shape)
     y = tf.keras.layers.Dense(32, activation='relu').apply(y)
-    input(y.shape)
+    # input(y.shape)
     logits = tf.keras.layers.Dense(10).apply(y)
     if mode == tf.estimator.ModeKeys.PREDICT:
       predicted_classes = tf.argmax(logits, 1)
@@ -217,8 +217,8 @@ def cnn_model_fn(features, labels, mode):
       return tf.estimator.EstimatorSpec(mode, predictions=predictions)
     # Calculate loss as a vector (to support microbatches in DP-SGD).
     
-    print(labels.shape)
-    input(logits.shape)
+    # print(labels.shape)
+    # input(logits.shape)
       
     vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits)

@@ -109,9 +109,11 @@ def train(dataset, model_name, mode='nn'):
     if mode == 'nn':
       print('TRAINING USING NEURON NETWORK')
       if(FLAGS.dataset == "cifar10"):
+        print("CIFAR10 MODEL")
         mnist_classifier = tf.estimator.Estimator(model_fn=cifar_10_cnn_model_fn,
                                                   model_dir=FLAGS.model_dir)
       else:
+        print("MNIST MODEL")
         mnist_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,
                                                   model_dir=FLAGS.model_dir)
       

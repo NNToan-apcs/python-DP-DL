@@ -38,7 +38,7 @@ def get_data_indices(data_size, target_train_size=int(1e4), sample_target_data=T
     return target_data_indices, shadow_indices
 
 
-def load_mnist():
+def load_mnist_keras():
   """Loads MNIST and preprocesses to combine training and validation data."""
   train, test = tf.keras.datasets.mnist.load_data()
   train_data, train_labels = train
@@ -60,6 +60,27 @@ def load_mnist():
   assert train_data.max() == 1.
   assert test_data.min() == 0.
   assert test_data.max() == 1.
+  
+  return train_data, train_labels, test_data, test_labels
+
+def load_mnist():
+  """Loads MNIST and preprocesses to combine training and validation data."""
+  train, test = tf.keras.datasets.mnist.load_data()
+  train_data, train_labels = train
+  test_data, test_labels = test
+
+  train_data = np.array(train_data, dtype=np.float32) / 255
+  test_data = np.array(test_data, dtype=np.float32) / 255
+
+  train_labels = np.array(train_labels, dtype=np.int32)
+  test_labels = np.array(test_labels, dtype=np.int32)
+
+  assert train_data.min() == 0.
+  assert train_data.max() == 1.
+  assert test_data.min() == 0.
+  assert test_data.max() == 1.
+  assert train_labels.ndim == 1
+  assert test_labels.ndim == 1
 
   return train_data, train_labels, test_data, test_labels
 

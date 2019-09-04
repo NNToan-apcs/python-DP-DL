@@ -15,9 +15,13 @@ privacy/DL_models
 privacy/_pycache_/
 privacy/tutorials/model.h5
 privacy/tutorials/model.json
+privacy/tutorials/logs
 DeepLearningZeroToAll/
 
-mlLeaks simp code/data
+mlLeaks-simp-code/data
+mlLeaks-simp-code/_pycache_
+
+membership-inference/__pycache__
 
 ML-Privacy-Regulization/datasets
 ML-Privacy-Regulization/utils

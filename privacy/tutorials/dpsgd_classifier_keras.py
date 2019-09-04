@@ -34,8 +34,9 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from privacy.analysis.rdp_accountant import compute_rdp
 from privacy.analysis.rdp_accountant import get_privacy_spent
 from privacy.optimizers.dp_optimizer import DPGradientDescentGaussianOptimizer
-# from model import cnn_model_fn, softmax_model_fn, cifar_10_cnn_model_fn
-from utils import load_mnist, load_cifar10
+
+from model_keras import get_model_stucture
+from utils import load_mnist_keras, load_cifar10
 
 if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
   GradientDescentOptimizer = tf.train.GradientDescentOptimizer
@@ -73,60 +74,23 @@ def compute_epsilon(steps):
   return get_privacy_spent(orders, rdp, target_delta=1e-5)[0]
 
 
-def get_model_stucture(model_name):
-  if( model_name == "mnist"):
-    model = tf.keras.Sequential([
-      tf.keras.layers.Conv2D(16, 8,
-                             strides=2,
-                             padding='same',
-                             activation='relu',
-                             input_shape=(28, 28, 1)),
-      tf.keras.layers.MaxPool2D(2, 1),
-      tf.keras.layers.Conv2D(32, 4,
-                             strides=2,
-                             padding='valid',
-                             activation='relu'),
-      tf.keras.layers.MaxPool2D(2, 1),
-      tf.keras.layers.Flatten(),
-      tf.keras.layers.Dense(32, activation='relu'),
-      tf.keras.layers.Dense(10)
-    ])
-  elif(model_name == "cifar10"):
-    # https://keras.io/examples/cifar10_cnn/
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Conv2D(32, (3, 3), padding='same',
-                    input_shape=(32, 32, 3)))
-    model.add(tf.keras.layers.Activation('relu'))
-    model.add(tf.keras.layers.Conv2D(32, (3, 3)))
-    model.add(tf.keras.layers.Activation('relu'))
-    model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(tf.keras.layers.Dropout(0.25))
-
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), padding='same'))
-    model.add(tf.keras.layers.Activation('relu'))
-    model.add(tf.keras.layers.Conv2D(64, (3, 3)))
-    model.add(tf.keras.layers.Activation('relu'))
-    model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(tf.keras.layers.Dropout(0.25))
-
-    model.add(tf.keras.layers.Flatten())
-    model.add(tf.keras.layers.Dense(512))
-    model.add(tf.keras.layers.Activation('relu'))
-    model.add(tf.keras.layers.Dropout(0.5))
-    model.add(tf.keras.layers.Dense(10))
-    model.add(tf.keras.layers.Activation('softmax'))
-  else:
-    model = None
-  return model
-
 def train(dataset, model_name, mode='nn'):
   tf.logging.set_verbosity(tf.logging.INFO)
+  logfile = "softmax\\" + model_name + "_" + mode if mode == "softmax" else "sgd\\" + model_name + "_" + mode
+  if os.path.exists(".\\logs\\" + logfile):
+      print("FOLDER IS EXISTS")
+      i=1
+      while os.path.exists(".\\logs\\" + logfile + '_' + str(i)):
+        i+=1
+      logfile = logfile + '_' + str(i) 
+
+  tb_callbacks = tf.keras.callbacks.TensorBoard(log_dir=".\\logs\\{}".format(logfile))
   if FLAGS.dpsgd and FLAGS.batch_size % FLAGS.microbatches != 0:
     raise ValueError('Number of microbatches should divide evenly batch_size')
-  model = get_model_stucture(model_name)
+  model = get_model_stucture(mode)
   # Load training and test data.
   train_data, train_labels, test_data, test_labels = dataset
-  input(train_labels)
+  
   # Define a sequential Keras model
   
   if FLAGS.dpsgd:
@@ -151,7 +115,8 @@ def train(dataset, model_name, mode='nn'):
   model.fit(train_data, train_labels,
             epochs=FLAGS.epochs,
             validation_data=(test_data, test_labels),
-            batch_size=FLAGS.batch_size)
+            batch_size=FLAGS.batch_size,
+            callbacks=[tb_callbacks])
 
   # Compute the privacy budget expended.
   if FLAGS.dpsgd:
@@ -167,7 +132,7 @@ def train(dataset, model_name, mode='nn'):
   # serialize weights to HDF5
   model.save_weights("model.h5")
   print("Saved model to disk")
-  # return model
+  return model
 
 def main(unused_argv):
   # dataset = load_mnist()
