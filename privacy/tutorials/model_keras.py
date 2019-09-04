@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 def get_model_stucture(mode):
-    input(mode)
+    # input(mode)
     if( mode == "mnist"):
       model = get_mnist_cnn()
     elif(mode == "cifar10"):

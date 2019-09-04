@@ -51,7 +51,8 @@ flags.DEFINE_float('noise_multiplier', 1.1,
                    'Ratio of the standard deviation to the clipping norm')
 flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 250, 'Batch size')
-flags.DEFINE_integer('epochs', 10, 'Number of epochs')
+flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+flags.DEFINE_integer('softmax_epochs', 20, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 250, 'Number of microbatches '
     '(must evenly divide batch_size)')
@@ -112,8 +113,9 @@ def train(dataset, model_name, mode='nn'):
   model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
   # Train model with Keras
+  epochs = FLAGS.softmax_epochs if mode == "softmax" else FLAGS.epochs
   model.fit(train_data, train_labels,
-            epochs=FLAGS.epochs,
+            epochs=epochs,
             validation_data=(test_data, test_labels),
             batch_size=FLAGS.batch_size,
             callbacks=[tb_callbacks])
