@@ -51,8 +51,8 @@ flags.DEFINE_float('noise_multiplier', 1.1,
                    'Ratio of the standard deviation to the clipping norm')
 flags.DEFINE_float('l2_norm_clip', 1.0, 'Clipping norm')
 flags.DEFINE_integer('batch_size', 250, 'Batch size')
-flags.DEFINE_integer('epochs', 20, 'Number of epochs')
-flags.DEFINE_integer('softmax_epochs', 20, 'Number of epochs')
+flags.DEFINE_integer('epochs', 200, 'Number of epochs')
+flags.DEFINE_integer('softmax_epochs', 50, 'Number of epochs')
 flags.DEFINE_integer(
     'microbatches', 250, 'Number of microbatches '
     '(must evenly divide batch_size)')
@@ -77,22 +77,37 @@ def compute_epsilon(steps):
 
 def train(dataset, model_name, mode='nn'):
   tf.logging.set_verbosity(tf.logging.INFO)
-  logfile = "softmax\\" + model_name + "_" + mode if mode == "softmax" else "sgd\\" + model_name + "_" + mode
+  epochs = FLAGS.softmax_epochs if mode == "softmax" else FLAGS.epochs
+  if mode == "softmax":
+    FLAGS.learning_rate = 0.01
+  logfile = FLAGS.dataset  + "\\softmax\\" + model_name + "_" + str(epochs)if mode == "softmax" else FLAGS.dataset + "\\sgd\\" + model_name + "_" + str(epochs)
+  # logfile = logfile + "_" + str(epochs)
+  # input(logfile)
   if os.path.exists(".\\logs\\" + logfile):
       print("FOLDER IS EXISTS")
       i=1
       while os.path.exists(".\\logs\\" + logfile + '_' + str(i)):
         i+=1
       logfile = logfile + '_' + str(i) 
-
+  # input(FLAGS.dataset + "_" + str(epochs))
+  # logfile = FLAGS.dataset + "_" + str(epochs)
+  
   tb_callbacks = tf.keras.callbacks.TensorBoard(log_dir=".\\logs\\{}".format(logfile))
   if FLAGS.dpsgd and FLAGS.batch_size % FLAGS.microbatches != 0:
     raise ValueError('Number of microbatches should divide evenly batch_size')
-  model = get_model_stucture(mode)
   # Load training and test data.
   train_data, train_labels, test_data, test_labels = dataset
-  
+  # input(train_data.shape)
+  # input(train_data[1].shape)
+  # input(train_labels[1].shape)
+  # input(train_data[1])
+  # input(train_labels[1])
   # Define a sequential Keras model
+  input_shape = train_data[1].shape
+  num_classes = 2
+  train_labels = tf.keras.utils.to_categorical(train_labels, num_classes)
+  test_labels = tf.keras.utils.to_categorical(test_labels, num_classes)
+  model = get_model_stucture(mode, input_shape)
   
   if FLAGS.dpsgd:
     optimizer = DPGradientDescentGaussianOptimizer(
@@ -113,7 +128,7 @@ def train(dataset, model_name, mode='nn'):
   model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
   # Train model with Keras
-  epochs = FLAGS.softmax_epochs if mode == "softmax" else FLAGS.epochs
+  
   model.fit(train_data, train_labels,
             epochs=epochs,
             validation_data=(test_data, test_labels),
