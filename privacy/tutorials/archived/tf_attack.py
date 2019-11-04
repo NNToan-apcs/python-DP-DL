@@ -20,6 +20,7 @@ from sklearn.metrics import classification_report, accuracy_score
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('dataset', 'mnist' , 'dataset name')
+flags.DEFINE_integer('n_shadow', 10 , ' # of shadow models')
 
 MODEL_PATH = './model/'
 DATA_PATH = './data/'
@@ -188,7 +189,7 @@ def train_shadow_models(dataset, save=True):
     attack_x, attack_y = [], []
     classes = []
     batchSize = 100
-    n_shadow = 10
+    n_shadow = FLAGS.n_shadow
     for i in range(n_shadow):
         print( 'Training shadow model {}'.format(i))
         data = load_data('shadow{}_data.npz'.format(i))
@@ -274,7 +275,9 @@ def train_attack_model(classes=None, dataset=None):
         input(c_train_y.shape)
         input(c_test_x.shape)
         input(c_test_y.shape)
-        # c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
+        c_dataset = (c_train_x, c_train_y, c_test_x, c_test_y)
+
+
         # f=open("./attack_data/c_train_x_"+ str(c) + ".txt", "w+")
         # for idx in range(len(c_train_x)):
         #     f.write(str(idx) + " - " +str(c_train_x[idx])+"\n")
@@ -387,28 +390,6 @@ def train_attack_model(classes=None, dataset=None):
     # print( classification_report(true_y, pred_y))
 
 # MAIN PROGRAMMES
-# TODO
-
-# def load_cifar10():
-#   """Loads MNIST and preprocesses to combine training and validation data."""
-#   train, test = tf.keras.datasets.cifar10.load_data()
-#   train_data, train_labels = train
-#   test_data, test_labels = test
-
-# #   input(len(train_data))
-# #   train_data = train_data.shape[1:]
-# #   input(len(train_data))
-#   train_data = np.array(train_data, dtype=np.float32)
-#   test_data = np.array(test_data, dtype=np.float32)
-
-#   train_labels = np.array(train_labels, dtype=np.int32)
-#   test_labels = np.array(test_labels, dtype=np.int32)
-#   print(train_data.shape)
-#   print(test_data.shape)
-#   print(train_labels.shape)
-#   print(test_labels.shape)
-#   return train_data, train_labels, test_data, test_labels
-
 def attack_experiment(unused_argv):
     print( '-' * 10 + 'TRAIN TARGET' + '-' * 10 + '\n')
     dataset = load_data('target_data.npz')
@@ -447,7 +428,7 @@ if __name__ == '__main__':
     # if test not give, train test split configuration
     parser.add_argument('--test_ratio', type=float, default=0.3)
     # target and shadow model configuration
-    parser.add_argument('--n_shadow', type=int, default=10)
+    parser.add_argument('--n_shadow', type=int, default=1)
     parser.add_argument('--dataset', type=str, default="mnist")
     parser.add_argument('--target_data_size', type=int, default=int(1e4))   # number of data point used in target model
     parser.add_argument('--target_model', type=str, default='nn')
@@ -472,6 +453,8 @@ if __name__ == '__main__':
         save_data() # Check dataset which is used by this function before running!!!
     else:
         FLAGS.dataset = args.dataset
+        FLAGS.n_shadow = args.n_shadow
+        
         app.run(attack_experiment)
         # app.run(main)
     

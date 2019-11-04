@@ -16,6 +16,16 @@ privacy/_pycache_/
 privacy/tutorials/model.h5
 privacy/tutorials/model.json
 privacy/tutorials/logs
+privacy/tutorials/model_stats
+
+MIA_env/__pycache__
+MIA_env/data
+MIA_env/model
+MIA_env/record_data
+MIA_env/evaluate
+MIA_env/attack_data
+MIA_env/model_stats
+MIA_env/logs
 DeepLearningZeroToAll/
 
 mlLeaks-simp-code/data
